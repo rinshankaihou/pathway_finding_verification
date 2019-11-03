@@ -7,7 +7,7 @@ This algorithm's main idea is duality between graphs. Other properties follow im
 
 1. Each taxiway has a unique name, and does not intersect itself.
 2. For any two different taxiways, they can have at most 1 intersection.
-3. In order to transform this graph to a dual, every node of our interest in this graph should be an intersection point. Therefore for those node of degree one(D,E,F), a dummy fake taxiway (d, e, f) are added to create intersections, and dummy fake taxiways does not intersect other taxiways.
+3. In order to transform this graph to a dual, every node of our interest in this graph should be an intersection point. Therefore for those node of degree one(D,E,F) - the input/output nodes for the case of Ann Arbor, a dummy fake taxiway (d, e, f) are added to create intersections, and dummy fake taxiways does not intersect other taxiways.
 4. I forgot why I included dummy taxiway g. Maybe it is not important.
 
 ### Notation
@@ -26,14 +26,23 @@ Informally, a mapping from *G* to *D* does such: each **Node** in *G* correspond
 The following algorithm works on *D*, and **Node** refer to the name of an edge in *D* (capital letters in the picture), while **TaxiwayName** is the name of a node in *D*.
 
 Node := [A-F]
+
 N1 := Node
+
 N2 := Node
+
 TaxiwayName := [a-f]
+
 TaxiwayNames := TaxiwayName*
+
 ATC := N1 N2 TaxiwayNames
+
 f := TaxiwayNames.first
+
 l := TaxiwayNames.last
+
 attached(n : Node, e : TaxiwayName) : True iff a node e is attached to an edge called e.
+
 connected(t1 : TaxiwayName, t2 : TaxiwayName ): True iff the nodes t1 and t2 are connected by a single edge
 
 ### Pseudocode
@@ -56,21 +65,13 @@ This is a rewrite of the pseudocode in the picture above for clarity.
 	SEARCH(D E ca)= DBE
 
 ### Remarks
-1. The algorithm outputs are all names of Nodes of intersections, for example 
+1. The algorithm outputs are all names of Nodes of intersections where the aircraft turns onto a new taxiway, for example 
 
 		SEARCH(D E ca)= DBE
-ignores Node *A* and Node *C* in *G*, but this missing can be filled easily, since every two consecutive Nodes are on the same *Pathway*.
+ignores Node *A* and Node *C* in *G* - the other intersections that are crossed along the way, but this missing can be filled easily, since every two consecutive Nodes are on the same *Pathway*.
 
 2. The algorithm seems to output a valid path when there is one, and fail when there is not. The path does not allow U-turn within the same taxiway. **TODO** is it *really* correct?
 
 3. Additionally, if the assumption holds, the dual graph seems to ensure that there is at most one path.
 
 4. Looks like this dual graph works for ATC of the form (N1 N2 TaxiwayNames), where N1 and N2 are any Nodes.
-
-
-
-
-
-
-
-
