@@ -20,7 +20,7 @@ Paren indicates the naming in the pseudo code.
 
 Informally, a mapping from *G* to *D* does such: each **Node** in *G* corresponds to an edge in *D*, and each edge in *G* corresponds to a **Node** in *D*. Corresponding elements preserve the same name. So now each node in *D*  is a taxiway (**TaxiwayName**) and is unique, whereas each edge in *D*  is a **Node** and can have the same *node name*.
 
-  ![duality]](/Algo.jpg)
+  ![duality]](Algo.jpg)
   
 ### More Notation
 The following algorithm works on *D*, and **Node** refer to the name of an edge in *D* (capital letters in the picture), while **TaxiwayName** is the name of a node in *D*.
