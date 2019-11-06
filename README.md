@@ -41,7 +41,7 @@ f := TaxiwayNames.first
 
 l := TaxiwayNames.last
 
-attached(n : Node, e : TaxiwayName) : True iff a node e is attached to an edge called e.
+attached(n : Node, e : TaxiwayName) : True iff a node n is attached to an edge called e.
 
 connected(t1 : TaxiwayName, t2 : TaxiwayName ): True iff the nodes t1 and t2 are connected by a single edge
 
