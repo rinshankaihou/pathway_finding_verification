@@ -10,17 +10,31 @@ From GraphBasics Require Export Vertices.
     Edge_list *)
 
 (* To do later. first touch fish *)
-Definition Node : Type.
-Definition Edge : Type.
-Definition _Node_list : Type.
-Definition Edge_list : Type.
+
+Print Vertex.
+(* Inductive Vertex : Set :=  index : nat -> Vertex *)
+Definition Node : Type := Vertex. (* alias *)
+Print Edge.
+Definition _Node_list : Type := list Node.
+Definition Edge_list : Type := list Edge.
 Inductive Node_list : Type :=
   | Some (n : Node_list)
   | None.
-
-Notation "{x}" := (indexing x). (* where x is an edge*)
+Definition Indexing : Type := Edge -> nat.
+Notation "{ x }" := (Indexing x). (* where x is an edge*)
 (* '~' defines an equivalence relation *)
-Notation "x~y" := ({x} = {y}). (* where x,y are edges*)
+(* Notation " x ~ y " :=  eq_nat (indexing x) (indexing y).*) (* where x,y are edges*)
+
+(* input to this algorithm is a GV_list and adjacency_list, where the former  
+   is to ensure termination *)
+(*is this function infinite?*)
+(*abr. as AL *)
+Definition adjacency_list : Type :=
+  list Vertex * (list Vertex * nat).
+ (*maps a node to adjacent nodes, along with the pathwaynames that connect them*)
+(* '*' return the product type *) 
+
+(*Definition gen_graph (AL : adjacency_list): Graph *)
 
 (*nat is the index of taxiway. indexing models giving name to taxiway names*)
 (* return the number of edges that has taxiway_name name attached to it *)
