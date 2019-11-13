@@ -40,14 +40,7 @@ Definition adjacency_list : Type :=
 (* return the number of edges that has taxiway_name name attached to it *)
 Fixpoint taxiway_degree (z : Node) (taxiway : nat) (edges : Edge_list) (indexing : Edge -> nat) : nat :=
   match edges with
-  | [] => 0
-  | e::l => if In z e /\ ({e} = nat)(* if z is an end point of edge e*) then S (taxiway_degree z nat l indexing)
-                else (taxiway_degree z nat l indexing)
-  end.
-  
-Fixpoint taxiway_degree (z : Node) (taxiway : nat) (edges : Edge_list) (indexing : Edge -> nat) : nat :=
-  match edges with
-  | [] => 0
+  | nil => 0
   | e::l => if In z e /\ ({e} = nat)(* if z is an end point of edge e*) then S (taxiway_degree z nat l indexing)
                 else (taxiway_degree z nat l indexing)
   end.
