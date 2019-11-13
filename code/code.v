@@ -44,6 +44,13 @@ Fixpoint taxiway_degree (z : Node) (taxiway : nat) (edges : Edge_list) (indexing
   | e::l => if In z e /\ ({e} = nat)(* if z is an end point of edge e*) then S (taxiway_degree z nat l indexing)
                 else (taxiway_degree z nat l indexing)
   end.
+  
+Fixpoint taxiway_degree (z : Node) (taxiway : nat) (edges : Edge_list) (indexing : Edge -> nat) : nat :=
+  match edges with
+  | [] => 0
+  | e::l => if In z e /\ ({e} = nat)(* if z is an end point of edge e*) then S (taxiway_degree z nat l indexing)
+                else (taxiway_degree z nat l indexing)
+  end.
 
 (*input: all edge in the graph, indexing function that represents taxiway names*)
 (* SPEC of the input. there are two distinct edges x, y in the graph*)
