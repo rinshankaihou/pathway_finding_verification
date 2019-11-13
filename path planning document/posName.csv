@@ -1,0 +1,18 @@
+C1 input,28
+C1 from CB,28
+CB from C1,20
+CB from CA,21
+CB from BA,9
+BA from CB,3
+BA from CA,0
+BA from A2,2
+BA from A3,1
+CA from BA,10
+CA from CB,17
+CA from A1,18
+A1 input,23
+A1 from CA,23
+A2 input,4
+A2 from BA,4
+A3 input,19
+A3 from BA,19

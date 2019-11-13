@@ -1,0 +1,7 @@
+C1,Input/Output,CB via C
+A1,Input/Output,CA via A1
+A2,Input/Output,BA via A2
+A3,Input/Output,BA via A
+CB,Intersection,C1 via C,BA via B,CA via C
+BA,Intersection,A2 via A2,A3 via A,CB via B,CA via A
+CA,Intersection,A1 via A1,CB via C,BA via A
