@@ -1,3 +1,11 @@
+# TODO (11-14)
+1. Help Ke to make the basic definitions and basic functions done.
+2. Modify the algo to drop the assumptions, (maybe adding a nodelist of the previous nodes.)
+    - at most 2 neighbours
+    - no loop
+3. try to make the functions easier to read, and not so messy, currently i pass too many arguments.
+
+
 # Using the library
 1. The GraphBasics lab is old, we need to use **-impredicative-set** option to launch.
     - in vscoq, you need to add "coqtop.args"
