@@ -29,8 +29,7 @@ Require Export definitions_taxi.
 
 (*================ get_last_segment ====================*)
 
-Fixpoint last_segment (source_node : Node) (pre_node : Node) (cur_node : Node) (end_node : Node) (taxiway : nat) 
-                      (vset : V_set) (aset : A_set) (g : Graph vset aset) (neighbor_nodes : V_list) : V_list :=
+Fixpoint last_segment (source_node : Node) (pre_node : Node) (cur_node : Node) (end_node : Node) (taxiway : nat) (g : Graph) (neighbor_nodes : Node_list) : Node_list :=
     match neighbor_nodes with
         | [] => []
         | x :: l => match x with
@@ -75,7 +74,7 @@ Definition get_intermediate_nodes (cur_node : Node) (cur_taxi : nat) (next_taxi 
 (*=================== find_path =========================*)  
 
 (*It's done very early, I can't check the correctness now...*)
-Fixpoint find_path (start_node : Node) (end_node : Node) (taxiway_names : nat) (g : Graph) : Node_list :=
+Fixpoint find_path (start_node : Node) (end_node : Node) (taxiway_names : list nat) (g : Graph) : Node_list :=
     match taxiway_names with
     | [] => None
     | a::[] => match get_last_segment start_node end_node a with
@@ -91,4 +90,5 @@ Fixpoint find_path (start_node : Node) (end_node : Node) (taxiway_names : nat) (
       
 Definition find_path_wrapper (start_node : Node) (end_node : Node) (taxiway_names : nat) (g : Graph) : Node_list :=
      start_node::(find_path start_node end_node taxiway_names).
+      
       
