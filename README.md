@@ -1,32 +1,26 @@
-# TODO (11-14)
-1. Help Ke to make the basic definitions and basic functions done.
-2. Modify the algo to drop the assumptions, (maybe adding a nodelist of the previous nodes.)
-    - at most 2 neighbours
-    - no loop
-3. try to make the functions easier to read, and not so messy, currently i pass too many arguments.
+# Algorithm (naive_dfs.v)
+Usage: set **-impredicative-set** and run to the end. Other files are not important at all.
 
+The examples are based on the configuration of the AA airport. Feel free to add your test cases.
 
-# Using the library
+Currently we are only using the definitions in vertices.v in the library.
+
+# Spec
+Currently there is no formal spec for the input nor the output. (TODO)
+
+Refer naive_dfs.v for the definitions. The entry point of the algorithm is find_path_wrapper.
+
+# Notes
+Check out this library https://github.com/math-comp/math-comp/blob/master/mathcomp/ssreflect/fingraph.v, which has a dfs implemented, but Ke does not understand the code. TODO Consider using this library.
+
+# Using the GraphBasics library
 1. The GraphBasics lab is old, we need to use **-impredicative-set** option to launch.
     - in vscoq, you need to add "coqtop.args"
+    - in coqide, append **-impredicative-set** in Tools->Coqtop Arguments.
     - It may cause inconsistency?  see "https://github.com/coq/coq/wiki/Impredicative-Set".
-2. Using make to build the ".vo" files.
+2. Use make to build the ".vo" files.
 3. You need to use **From GraphBasics Require Export xxx** instead of just require export. 
-    - It may cause inconsistency, see "https://github.com/coq/coq/wiki/Impredicative-Set".
-    - I don't know whether it's okey, or need to rewrite it.
 
-
-# Algorithm (function.v)
-1. Siyuan wrote the "functions.v", Ke did with the definition. "function.v" need to import some definitions, but we're just pretending the definitions are there.
-2. Siyuan rewrite some functions in the original algorithm into recursive format. 
-3. There're still many things need to be changed...
-4. We need to work further on the definitions.
-
-# Spec (code.v)
-The current input for this algorithm is **g : Graph** a graph, **ind : Edge -> nat** an indexing for edges in the graph. 
-
-is_valid_indexing asserts that, intuitively, every pathway is a continuous line that does not intersect itself. More specifically, the number of nodes that is attached to exactly 1 edge of some specific taxiway is 2 (endpoints), other nodes can have either 0 or 2 edges attached to it that is part of the taxiway.
-
-TODO: write gen_graph(adjacency_list) -> graph
-
-TODO: This is an initial design. Fully implement the spec after checking the correctness.
+# Contributions
+1. Siyuan completed and modified the algorithms in functions.v as well as in *.py in the folder /code. BTW Ke thinks 'code' is a name that precisely represents the nature of the objects contained in the folder. 
+2. Ke modified Siyuan's functions in naive_dfs.v.
