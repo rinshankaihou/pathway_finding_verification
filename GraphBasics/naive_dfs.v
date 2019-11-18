@@ -5,15 +5,21 @@ Require Import Coq.Lists.List.
 From GraphBasics Require Export Vertices.
 Import ListNotations.
 (*From Coq Require Import FSets.FMapInterface.*)
-(* The definitions:
-    Node
-    Edge
-    Node_list
-    Edge_list *)
-
-
-
-Check E_set (index 1) (index 2).
+(* The definitions imported:
+     Vertex: nat->Vertex, indexed by nat
+     Edge: Vertex->Vertex->Edge (not being used currently)
+     V_list = list Vertex
+     E_list = list Edge
+   New definitions:
+     taxiway : V_list, an ordered list of all vertices on the taxiway. 
+                       There is no name for a taxiway. 
+                       
+     taxiways : list taxiway, a list of all taxiways. order does not matter.
+                              TODO Consider using string->V_list to replace taxiways.
+   taxiways represents all information in the graph for now
+   ATC Command is: (start_vertex, end_vertex, taxiway_names)
+   Entry point (top level function) find_path_wrapper.
+*)
 
 Example A1 := index 1.
 Example A2 := index 2.
@@ -82,8 +88,6 @@ Example eg_taxiways :=
 
 
 
-Definition Node := Vertex.
-
 Definition eqv (v1 : Vertex) (v2 : Vertex) : bool :=
   match v1, v2 with
   index n1, index n2 => beq_nat n1 n2
@@ -138,11 +142,11 @@ Definition unwrap {T : Type} (thing : option (list T)) : list T :=
 Eval vm_compute in eqv_list (unwrap (chop_tail nC nB)) [C1; CB] == true.
 
 
-(* TODO for now, if there are multiple intermediate nodes, we arbitrary pick one *)
-(* return a path segment of cur_taxi, from cur_node (exclusive) to a node on the next taxiway (inclusive) *) 
-Definition get_seg (cur_node : Node) (cur_taxi : V_list) (next_taxi : V_list) : option V_list :=
-  match (chop_tail  (list_after_v cur_node cur_taxi) next_taxi), 
-        (chop_tail  (list_after_v cur_node (rev cur_taxi)) next_taxi) with 
+(* TODO for now, if there are multiple intermediate vertexs, we arbitrary pick one *)
+(* return a path segment of cur_taxi, from cur_vertex (exclusive) to a vertex on the next taxiway (inclusive) *) 
+Definition get_seg (cur_vertex : Vertex) (cur_taxi : V_list) (next_taxi : V_list) : option V_list :=
+  match (chop_tail  (list_after_v cur_vertex cur_taxi) next_taxi), 
+        (chop_tail  (list_after_v cur_vertex (rev cur_taxi)) next_taxi) with 
     | None, None => None
     | Some lst1, Some lst2 => None
     | Some lst1, None => Some lst1
@@ -158,11 +162,11 @@ Proof. reflexivity. Qed.
 Example eg_get_seg_4: get_seg CA nC nB = Some [CB].
 Proof. reflexivity. Qed.
 
-Fixpoint find_path (cur_node : Node) (cur_taxiway : V_list) (rest_taxiway_names : list V_list) : option V_list :=
+Fixpoint find_path (cur_vertex : Vertex) (cur_taxiway : V_list) (rest_taxiway_names : list V_list) : option V_list :=
     match rest_taxiway_names with
     | [] => Some []
     | next_taxiway::rest_taxiway =>
-      match get_seg cur_node cur_taxiway next_taxiway with
+      match get_seg cur_vertex cur_taxiway next_taxiway with
         | None => None
         | Some seg => match rev seg with (* rev is to extract the last elem *)
           | [] => None (* Should be unreachable, since a valid seg contains at least a vertex on the next taxiway *)
@@ -176,15 +180,15 @@ Fixpoint find_path (cur_node : Node) (cur_taxiway : V_list) (rest_taxiway_names 
     end.
 (* test cases *)
 Eval vm_compute in  find_path C1 nC [nB; nA; [A3; A3]].
-(* ATC CMD: (start_node, end_node, taxiway_names). taxiway_names is a subset of every taxiway in the graph *)
-Definition find_path_wrapper (start_node : Vertex) (end_node : Vertex) (taxiway_names : list V_list) : option V_list :=
+(* ATC CMD: (start_vertex, end_vertex, taxiway_names). taxiway_names is a subset of every taxiway in the graph *)
+Definition find_path_wrapper (start_vertex : Vertex) (end_vertex : Vertex) (taxiway_names : list V_list) : option V_list :=
   match taxiway_names with
   | [] => None
   | fst_taxiway::rest_taxiways =>
     (* create a dummy taxiway in the end *)
-    match find_path start_node fst_taxiway (rest_taxiways ++ [[end_node;end_node]]) with
+    match find_path start_vertex fst_taxiway (rest_taxiways ++ [[end_vertex;end_vertex]]) with
     | None => None
-    | Some res => Some (start_node::res)
+    | Some res => Some (start_vertex::res)
     end   
   end.
 (* test cases *)
@@ -200,91 +204,3 @@ Example eg_find_path_5: find_path_wrapper C1 BA [nB] = None.
 Proof. reflexivity. Qed.
 Example eg_find_path_6: find_path_wrapper C1 A3 [nC;nB;nA;nC;nB;nA;nC;nB;nA] = Some [C1;CB;BA;CA;CB;BA;CA;CB;BA;A3].
 Proof. reflexivity. Qed.
-
-
-
-
-
-
-
-Definition _Node_list : Type := list Node.
-Definition Edge_list : Type := list Edge.
-Inductive Node_list : Type :=
-  | Some (n : Node_list)
-  | None.
-
-Notation "{ x }" := (Indexing x). (* where x is an edge*)
-(* '~' defines an equivalence relation *)
-(* Notation " x ~ y " :=  eq_nat (indexing x) (indexing y).*) (* where x,y are edges*)
-
-Check G_vertex
-Definition Adjacency_map : Type :=
-  Vertex -> list (Vertex * string).
-
-
-Definition add_edges(g : Graph) (vs : V_set) (am :  Adjacency_map) : Graph :=
-  match vs with
-  | [] => g
-  | v::l => G_edge vs 
-
-(* try to write out is_valid_indexing from adjacency_list *)
-(* for now does not check the nodes appears in the value field is a subset of nodes in the key *)
-Fixpoint is_valid_indexing_alter (AL : adjacency_list) : Prop :=
-  exists ent1, ent2 : Vertex * (list Vertex * nat)
-
-
-(* input to this algorithm is a GV_list and adjacency_list, where the former  
-   is to ensure termination *)
-(*is this function infinite?*)
-(*abr. as AL *)
-Definition adjacency_list : Type :=
-  list Vertex * (list Vertex * nat).
-
- (*maps a node to adjacent nodes, along with the pathwaynames that connect them*)
-(* '*' return the product type *) 
-
-(*Definition gen_graph (AL : adjacency_list): Graph *)
-
-(*nat is the index of taxiway. indexing models giving name to taxiway names*)
-(* return the number of edges that has taxiway_name name attached to it *)
-Fixpoint taxiway_degree (z : Node) (taxiway : nat) (edges : Edge_list) (indexing : Edge -> nat) : nat :=
-  match edges with
-  | nil => 0
-  | e::l => if In z e /\ (eq_nat {e}  taxiway)(* if z is an end point of edge e*) then S (taxiway_degree z nat l indexing)
-                else (taxiway_degree z nat l indexing)
-  end.
-
-
-(*input: all edge in the graph, indexing function that represents taxiway names*)
-(* SPEC of the input. there are two distinct edges x, y in the graph*)
-Definition is_valid_indexing (g : Graph) (indexing : Edge -> nat)  : Prop :=
-  match g with 
-  | Graph nodes edges => 
-  forall taxiway, exists g -> In g Graph -> {g} = taxiway -> (* For any taxiway in the graph, there existss    *)
-  exists x, exists y,                                        (* distinct nodes x, y in the graph s.t.,         *)
-  x != y -> In x nodes -> In y nodes ->                      (* x, y are end points of taxiway, and            *)                              
-    (taxiway_degree x taxiway edges indexing) = 1 /\     
-    (taxiway_degree y taxiway edges indexing) = 1 /\                       
-    forall z, In z nodes -> z!=x -> z!=y ->                  (* for other nodes z, the number of taxiways that,  
-                                                                has name _taxiway_ and are attached to z,      *)
-      (taxiway_degree z taxiway edges indexing) = 0 \/       (* is either 0                                    *)
-      (taxiway_degree z taxiway edges indexing) = 2.         (* or 2.                                          *)
-end.
-
-(*find all neighbors of n on the taxiway taxi_way, there should be at most two nodes*)
-Definition get_neighbors (n : Node) (taxi_way : nat) (g : graph) : Node_list:=
-  Admitted.
-
-
-(*return true if n is on taxiway*)
-Definition is_on_taxiway (n:Node) (taxiway : nat) (g:graph) : bool :=
-    Admitted.
-
-
-
-
-
-
-
-
-
