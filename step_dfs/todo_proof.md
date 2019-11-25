@@ -1,14 +1,28 @@
-# The new structure (neglect)
-0. Using **pair: {List Node, List Taxiway}** to indicate the data structure
+# The new structure (see code)
+0. Using **state:= {List Vertex, List Taxiway}** to indicate the data structure
 1. We'll use step-by-step instead of using a complete recursion. 
     - Arrange a list of the pairs we're going to explore like a stack/queue
     - For each pair we explore, if the neighbors are possible, i.e. on the current taxiway or next taxiway, we insert the pair into the list.
     - If the pair reaches the final output, we insert into the result list
 2. This algorithm is expected to be easier to prove.
 
-# TO Prove
+# Stregedy
+## get neighbors
+1. Results are strictly on the taxiway
+2. Number is at most 2
 
+## filter/pack neighbor
+1. Result will not be the previous node
+    - this is important in showing the fixpoint will stop
+    - or saying **in every step we decrease unchecked states**
+2. The next states are one-step from current state
+3. The packed states are correct
 
+## The fixpoint will stop
+1. prove unchecked states(vertices) are monotonous decrease
+2. We checked all states possible
+
+# Goals(please ignore)
 
 ## $\forall~ p$  we find is a valid path
 1. p starts at s and ends at e
@@ -21,16 +35,3 @@
     - Alternatively, we can prove that every taxiway is coresponding to some nodes
 
 **Explain**: by 1 we can validate the start and the end. By 3 we can prove every taxiway of ATC comman is used, and by 2 we can say that every vertice is in the ATC taxiway (aka the path is continuous).
-
-
-# Stregedy
-##  get_seg
-1. last elemnt the result of get_seg is on the next_taxi
-2. the result of get_seg is a sub-list of cur_taxi
-3. since the cur_node is not in the result, check it later 
-
-**Explain**: we show that get_seg really get the segement to the next taxiways.
-
-## find_path_wapper
-1. We want to prove that the result of find_path_wapper is appending the start_vertice to the result of find_path
-2. $\forall ~\text{start_vertice, }
