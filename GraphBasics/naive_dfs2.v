@@ -25,24 +25,26 @@ not using option type, or none
 *)
 
 
-Example A1 := index 1.
-Example A2 := index 2.
-Example A3 := index 3.
-Example C1 := index 4.
-Example CB := index 5.
-Example BA := index 6.
-Example CA := index 7.
+Example AA3 := index 1.
+Example AB := index 2.
+Example AC := index 3.
+Example AA1 := index 4.
+Example C1 := index 5.
+Example BC := index 6.
+Example A3_6 := index 7.
+Example A2_6 := index 8.
+Example A1_24 := index 9.
 
-Example nC  := [C1; CB; CA].
-Example nA1 := [A1; CA].
-Example nA2 := [A2; BA].
-Example nA := [A3; BA; CA].
-Example nB := [CB; BA].
+Example tC  := [C1; BC; AC].
+Example tA := [AA3; AB; AC; AA1].
+Example tB := [BC; AB].
+Example tA1 := [AA1; A1_24].
+Example tA2 := [AB; A2_6].
+Example tA3 := [AA3; A3_6].
 
 Example eg_taxiways :=
-[nC; nA1; nA2; nA; nB].
+[tC; tA; tB; tA1; tA2; tA3].
 
-Example s1 := ([CB;C1], [nB; nA]).
 
 Definition eqv (v1 : Vertex) (v2 : Vertex) : bool :=
   match v1, v2 with
@@ -63,8 +65,8 @@ Fixpoint v_in_vlist (v : Vertex) (vlst : V_list) : bool :=
   end.
 
 
-Example vin : v_in_vlist CA nA = true.
-Proof. reflexivity. Qed.
+(* Example vin : v_in_vlist CA nA = true.
+Proof. reflexivity. Qed. *)
 
 
 (* return sublist after v, or [] *)
@@ -93,13 +95,6 @@ Definition both_side_neighbor (v: option Vertex) (taxiway : option V_list) : V_l
     end
   end. 
 
-Example n0 : next_neighbor CB nC = [CA].
-Proof. reflexivity. Qed.
-
-Example n1 : both_side_neighbor (Some CB) (Some nC) = [CA; C1].
-Proof. reflexivity. Qed.
-Example n2 : both_side_neighbor (Some CB) (Some nA) = [].
-Proof. reflexivity. Qed.
 
 (* easy to prove that at most 2 elements, 
 using property of list, will drop which on the pre_list*)
@@ -131,13 +126,13 @@ Definition on_next_ATC (v : Vertex) (cur_v : V_list * list V_list) : bool :=
     end.
 
 
-Example foo : v_in_vlist BA [BA] = true.
+(* Example foo : v_in_vlist BA [BA] = true.
 Proof. reflexivity. Qed.
 
 Eval vm_compute in on_next_ATC (BA) ([CB;C1], [nB; nA]).
 
 Example o1 : on_next_ATC (BA) ([CB;C1], [nC;nB]) = true.
-Proof. reflexivity. Qed.
+Proof. reflexivity. Qed. *)
 
 (* input v, cur_v. (f cur_v) can be flat_mapped
     check v:
@@ -180,13 +175,13 @@ so which means we check neighbors for 2 taxiways
 Definition push_stack (cur_v : V_list * list V_list) : list (V_list * list V_list) :=
     flat_map (filter_neighbor cur_v) (both_side_neighbor (head (fst cur_v)) (head (snd cur_v))).
 
-Eval vm_compute in push_stack s1.
+(* Eval vm_compute in push_stack s1.
 Example p1 : push_stack s1 = [([BA;CB;C1], [nB; nA]); ([BA;CB;C1], [nA])].
 Proof. reflexivity. Qed.
 
 Eval vm_compute in push_stack ([CA;CB;C1], [nC; nA]).
 Example p2 : push_stack ([CA;CB;C1], [nC; nA]) = [].
-Proof. reflexivity. Qed.
+Proof. reflexivity. Qed. *)
 
 (* This is a function to check whether we reach the end of a path
   put it outside just to make things more clear*)
@@ -197,7 +192,7 @@ Definition is_the_path (cur_v : V_list * list V_list) (end_v : Vertex): bool :=
     | Some a => eqv a end_v && (length (snd cur_v) == 1)
     end.
 
-Eval vm_compute in is_the_path ([CB;C1],[nC]) CB.
+(* Eval vm_compute in is_the_path ([CB;C1],[nC]) CB. *)
 
 (* find_path maintains a stack, if is empty, end.
 each iteration it will fetch the first one in stack:
@@ -219,7 +214,7 @@ Fixpoint find_path (cur_stack : list (V_list * list V_list)) (end_v : Vertex) (i
         end
     end.  
 
-Eval vm_compute in find_path [([C1], [nC])] CB 100.
+(* Eval vm_compute in find_path [([C1], [nC])] CB 100. *)
 
 
 Definition find_path_wrapper (start_v : Vertex) (end_v : Vertex) (taxiway_names : list V_list) : list V_list :=
@@ -229,8 +224,25 @@ Definition find_path_wrapper (start_v : Vertex) (end_v : Vertex) (taxiway_names 
 
 
 
+Example eg_find_path_1 : find_path_wrapper C1 AB [tC] = [].
+Proof. reflexivity. Qed.
 
-  Example eg_find_path_5: find_path_wrapper C1 BA [nB] = [].
+Example eg_find_path_2 : find_path_wrapper C1 BC [tC] = [[C1; BC]].
+Proof. reflexivity. Qed.
+
+Example eg_find_path_3 : find_path_wrapper C1 AA3 [tC;tB;tA] = [[C1; BC; AB; AA3]].
+Proof. reflexivity. Qed.
+
+Example eg_find_path_4 : find_path_wrapper AA3 AA1 [tA;tB;tC;tA] = [[AA3; AB; BC; AC; AA1]].
+Proof. reflexivity. Qed.
+
+Example eg_find_path_5 : find_path_wrapper A3_6 A1_24 [tA3; tA; tA1] = [[A3_6; AA3; AB; AC; AA1; A1_24]].
+Proof. reflexivity. Qed.
+
+Example eg_find_path_6 : find_path_wrapper C1 C1 [tC; tB; tA; tC; tB; tA; tC] = [[C1; BC; AB; AC; BC; AB; AC; BC; C1]].
+Proof. reflexivity. Qed.
+
+  (* Example eg_find_path_5: find_path_wrapper C1 BA [nB] = [].
   Proof. reflexivity. Qed.  
     
   Eval vm_compute in find_path_wrapper C1 CB [nC].
@@ -247,7 +259,7 @@ Definition find_path_wrapper (start_v : Vertex) (end_v : Vertex) (taxiway_names 
 Eval vm_compute in find_path_wrapper C1 A3 [nC;nB;nA;nC;nB;nA;nC;nB;nA].
   Example eg_find_path_6: find_path_wrapper C1 A3 [nC;nB;nA;nC;nB;nA;nC;nB;nA] = [[C1;CB;BA;CA;CB;BA;CA;CB;BA;A3]].
   Proof. reflexivity. Qed.
-  
+   *)
 
 
 
