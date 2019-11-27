@@ -149,3 +149,47 @@ Fixpoint find_path (cur_stack : list (V_list * list V_list)) (end_v : Vertex) (i
 
 Definition find_path_wrapper (start_v : Vertex) (end_v : Vertex) (taxiway_names : list V_list) : list V_list :=
     find_path [([start_v], taxiway_names)] end_v 100.
+
+
+
+
+(*
+    TestCases, related to the latest graph notation
+*)
+
+Example A1_24 := index 0.
+Example AA1 := index 1.
+Example A2_6 := index 2.
+Example A3_6 := index 3.
+Example AA3 := index 8.
+Example C1 := index 4.
+Example CB := index 5.
+Example BA := index 6.
+Example CA := index 7.
+
+Example tC  := [C1; CB; CA].
+Example tA1 := [AA1; A1_24].
+Example tA2 := [A2_6; BA].
+Example tA := [AA3; BA; CA; AA1].
+Example tB := [CB; BA].
+Example tA3 := [AA3; A3_6].
+Example eg_taxiways :=
+  [tC; tA1; tA2; tA; tB; tA3].
+
+Example eg_find_path_1 : find_path_wrapper C1 AB [tC] = [].
+Proof. reflexivity. Qed.
+
+Example eg_find_path_2 : find_path_wrapper C1 BC [tC] = [[C1; BC]].
+Proof. reflexivity. Qed.
+
+Example eg_find_path_3 : find_path_wrapper C1 AA3 [tC;tB;tA] = [[C1; BC; AB; AA3]].
+Proof. reflexivity. Qed.
+
+Example eg_find_path_4 : find_path_wrapper AA3 AA1 [tA;tB;tC;tA] = [[AA3; AB; BC; AC; AA1]].
+Proof. reflexivity. Qed.
+
+Example eg_find_path_5 : find_path_wrapper A3_6 A1_24 [tA3; tA; tA1] = [[A3_6; AA3; AB; AC; AA1; A1_24]].
+Proof. reflexivity. Qed.
+
+Example eg_find_path_6 : find_path_wrapper C1 C1 [tC; tB; tA; tC; tB; tA; tC] = [[C1; BC; AB; AC; BC; AB; AC; BC; C1]].
+Proof. reflexivity. Qed.
