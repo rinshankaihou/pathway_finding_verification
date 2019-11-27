@@ -38,8 +38,8 @@
 
 ** Specification (start with 1., do 2 and 3 later)
 1. If I get a result for an ATC instruction, then this result is valid. For example, if the ATC instruction is “ACB”, the result I get is:
-  1. valid path in the graph;
-  2. correct end points; and
-  3. its ‘signature’ is of the form A+C+B+.
+   1. valid path in the graph;
+   2. correct end points; and
+   3. its ‘signature’ is of the form A+C+B+.
 2. If the algorithm is returning a result, there is no other valid result.
 3. If a taxiway is too small for the aircraft, then not part of the result should include this taxiway.
