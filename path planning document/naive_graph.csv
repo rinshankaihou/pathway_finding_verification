@@ -1,7 +1,9 @@
-C1,Input/Output,CB via C
-A1,Input/Output,CA via A1
-A2,Input/Output,BA via A2
-A3,Input/Output,BA via A
-CB,Intersection,C1 via C,BA via B,CA via C
-BA,Intersection,A2 via A2,A3 via A,CB via B,CA via A
-CA,Intersection,A1 via A1,CB via C,BA via A
+C1,Input/Output,BC via C
+A3_6,Input/Output,AA3 via A3
+A2_6,Input/Output,AB via A2
+A1_24,Input/Output,AA1 via A1
+AA3,Intersection,A3_6 via A3,AB via A
+AB,Intersection,A2_6 via A2,AA3 via A,BC via B,AC via A
+AC,Intersection,AA1 via A,BC via C,AB via A
+AA1,Intersection,A1_24 via A1,AC via A
+BC,Intersection,C1 via C,AC via C,AB via B
