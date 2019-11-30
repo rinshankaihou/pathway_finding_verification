@@ -9,20 +9,20 @@ Import ListNotations.
 Require Import Coq.Lists.List Coq.Bool.Bool.
 
 
-(* string will overlap vertex (maybe index), put string at first  *)
+(* string library will overlap vertex (the ctor index), import it first  *)
 
 (*
-Using the basic state (V_list, list string)
-    - fst is the vertice lists that previously visited, the first is current 
+Using state (V_list, list string) to represent a 
+    - fst is a list of vertices that previously visited, first is current 
     - snd is the remaining ATC commend, first is current
 
 For each state, we:
     1. get all nodes it points to
-    2. drop the last visited node
+    2. drop the most recently visited node
     3. drop all the nodes not on current/next taxiway in ATC command
     4. pack the rest for further check (recursively or iteratively)
 
-We should using the None type, since we need map vertex to it's edges
+We should be using the None type, since we need map vertex to it's edges
 But...It seems we don't need option type...
 
     Basic Type: 
@@ -42,7 +42,7 @@ But...It seems we don't need option type...
 
         Edge_type : Type := Vertex * (Vertex * string)
             - the edge
-            - (cur_vertex, (connected-to vertex, taxiway it on))
+            - (cur_vertex, (connected-to vertex, taxiway between them))
 
         Graph_type : Type := list Edge_type.
             - contains every edges
@@ -63,7 +63,7 @@ But...It seems we don't need option type...
             - accept current state, return a list of next possible states
 
 
-based on naive graph, if want to change to complete graph, just change globally Vertex to (Vertex, Vertex),
+based on naive graph, if want to change to complete graph, just change Vertex to (Vertex, Vertex),
 indicating (current, from)
 *)
 
@@ -125,7 +125,7 @@ Fixpoint v_in_vlist (v : Vertex) (vlst : V_list) : bool :=
   end.
 
 
-(* the map function, using list filter*)
+(* the map function, using list filter *)
 
 Definition v2e_map_filter (cur_v : Vertex) (edge : Edge_type) : bool :=
     eqv cur_v (fst edge).
@@ -145,8 +145,7 @@ Definition v2e_map (cur_v : Vertex) (graph : Graph_type) : list Edge_type :=
 
 Eval vm_compute in v2e_map AB ann_arbor.
 
-
-
+(* if node (should be a neighbor) is on this/next taxiway *)
 Definition if_valid_neighbor (cur_s : State_type) (node : Node_type) : bool :=
     match snd cur_s with
     | [] => false       (*won't happen*)
@@ -154,13 +153,14 @@ Definition if_valid_neighbor (cur_s : State_type) (node : Node_type) : bool :=
     | a :: b :: _ => (a =? snd node) || (b =? snd node)
     end.
 
+(* if the most recent vertex in cur_s is not node *)
 Definition not_last_node (cur_s : State_type) (node : Node_type) : bool :=
     match head (tail (fst cur_s)) with
     | None => true (*won't happen*)
     | Some a => if eqv a (fst node) then false else true
     end.
 
-(*only valid when on possible taxiway and not last*)
+(* return a list of neighbor nodes that are 1.reachable with current ATC 2.not the most recently visited node *)
 Definition vertex_connect_to (cur_s : State_type) (graph : Graph_type) : list Node_type :=
     match head (fst cur_s) with
     | None => []    (*will never encounter*)
@@ -175,18 +175,19 @@ Eval vm_compute in vertex_connect_to ([BC; Ch], [tC;tB]) ann_arbor.
 
 (* get the next states of a given taxiway *)
 
-Definition on_next_ATC (node : Node_type) (cur_s : State_type) : bool :=
+
+(* if node is on next taxiway *)
+Definition if_on_next_taxi (node : Node_type) (cur_s : State_type) : bool :=
     match snd cur_s with
     | [] => false       (*won't happen*)
     | _ :: nil => false
     | a :: b :: _ => b =? (snd node)
     end.
 
-
-    (*check a node is valid, and pack it to state*)
-    (*After dropping last node, filtering taixway, the result should be a state*)
+(* Check if a node is valid, and pack it to state*)
+(* After dropping last node, filtering taixway, the result should be a state*)
 Definition neighbor_packer (cur_s : State_type) (node : Node_type) : list State_type :=
-    if on_next_ATC node cur_s then [((fst node)::(fst cur_s), tail (snd cur_s))] else [((fst node)::(fst cur_s), snd cur_s)].
+    if if_on_next_taxi node cur_s then [((fst node)::(fst cur_s), tail (snd cur_s))] else [((fst node)::(fst cur_s), snd cur_s)].
 
 
 Eval vm_compute in neighbor_packer ([BC;Ch], [tC;tB]) (AB, tB).
@@ -205,23 +206,25 @@ Eval vm_compute in get_next_states ([BC;Ch], [tC;tB]) ann_arbor.
 
 Definition if_reach_endpoint (cur_s : State_type) (end_v : Vertex) : bool :=
     match head (fst cur_s) with
-    | None => false (*never encounter*)
+    | None => false (* never encounter *)
     | Some a => eqv a end_v && (length (snd cur_s) == 1)
     end.
 
 
-Fixpoint find_path (stack : list State_type) (end_v : Vertex) (graph : Graph_type) (round_bound : nat) : list V_list :=
+Fixpoint find_path (end_v : Vertex) (graph : Graph_type) (round_bound : nat) (cur_s : State_type) : list V_list :=
     match round_bound with
     | 0 => []
-    | S n => match stack with
-        | [] => []  
-        | a :: rest => if if_reach_endpoint a end_v then [rev (fst a)] ++ find_path rest end_v graph n
-                        else find_path (get_next_states a graph ++ rest) end_v graph n
-        end
-    end.
+    | S n => 
+        ((if if_reach_endpoint cur_s end_v 
+         then [rev (fst cur_s)]
+         else [])
+         ++ (flat_map (find_path end_v graph n) (get_next_states cur_s graph)))
+    end
+    
+.    
 
 Definition find_path_wrapper (start_v : Vertex) (end_v : Vertex) (taxiway : list string) (graph : Graph_type) : list V_list :=
-    find_path [([start_v], taxiway)] end_v graph 100.
+    find_path end_v graph 100 ([start_v], taxiway).
 
 
 Eval vm_compute in find_path_wrapper A3r A1r [tA3; tA; tA1] ann_arbor.
