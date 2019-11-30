@@ -226,7 +226,7 @@ Fixpoint find_path (end_v : Vertex) (graph : Graph_type) (round_bound : nat) (cu
 
 Definition find_path_wrapper (start_v : Vertex) (end_v : Vertex) (taxiways : list string) 
 (graph : Graph_type) : list (list Node_type) :=
-    find_path end_v graph 100 ([(start_v, "start")], taxiways).
+    find_path end_v graph 100 ([(start_v, "tC")], taxiways).
 
 (* turn paths in (list (list Node_type)) into V_list. Only for testing. *) 
 Definition extract_path (paths : list (list Node_type)): list V_list :=
@@ -264,21 +264,15 @@ Fixpoint path_valid_bool (n1 : Node_type) (rest_path : list Node_type) (g : Grap
     match rest_path with
     | n2::n_rest =>
         (* if v2 is on current taxiway *)
-        if (if_on_this_taxi ([n2;n1], taxiways) (n2))
+        if (if_on_this_taxi ([n1;n2], taxiways) (n2))
         then path_valid_bool n2 n_rest g taxiways
         else 
-        if (if_on_next_taxi ([n2;n1], taxiways) (n2))
+        if (if_on_next_taxi ([n1;n2], taxiways) (n2))
         then path_valid_bool n2 n_rest g (tail taxiways)
         else false (* if n2 is neither on this_taxi nor on next_taxi *)
-    | [] => (* if there is no more step in the path, 
-              it is correct iff there is no more taxiway to take *)
-        match taxiways with 
-            | [] => true 
-            | _  => false
-            end
+    | [] => if eqn 1 (length taxiways) then true else false (* the last taxiway will not be consumed *) 
     end
 .
-
 
 Definition path_valid_wrapper (path : list Node_type) (g : Graph_type) (taxiways : list string) : bool :=
     match path with
@@ -286,12 +280,41 @@ Definition path_valid_wrapper (path : list Node_type) (g : Graph_type) (taxiways
     | f::l => path_valid_bool f l g taxiways
     end.
 
+Fixpoint path_valid_b (n1 : Node_type) (rest_path : list Node_type) (g : Graph_type) (taxiways : list string) : list (list string) :=
+    match rest_path with
+    | n2::n_rest =>
+        (* if v2 is on current taxiway *)
+        if (if_on_this_taxi ([n1;n2], taxiways) (n2))
+        then taxiways :: (path_valid_b n2 n_rest g taxiways)
+        else 
+        if (if_on_next_taxi ([n1;n2], taxiways) (n2))
+        then taxiways :: (path_valid_b n2 n_rest g (tail taxiways))
+        else [] (* if n2 is neither on this_taxi nor on next_taxi *)
+    | [] => [taxiways]
+    end
+.
+
+Definition path_valid_wrapper2 (paths : list(list Node_type)) (g : Graph_type) (taxiways : list string) : list (list string) :=
+    match paths with
+    | [] => []
+    | path::emm => match path with 
+               | [] => [] 
+               | f::l => path_valid_b f l g taxiways 
+               end
+    end.
+Eval vm_compute in 
+(path_valid_wrapper2 
+ (find_path_wrapper Ch Ch [tC; tB; tA; tC; tB; tA; tC] ann_arbor) 
+ ann_arbor [tC; tB; tA; tC; tB; tA; tC]).
+
 Example path_valid_test : 
 forall path, 
 (In path (find_path_wrapper Ch Ch [tC; tB; tA; tC; tB; tA; tC] ann_arbor)) ->
 (path_valid_wrapper path ann_arbor [tC; tB; tA; tC; tB; tA; tC] = true).
 Proof. intros path H. simpl in H. destruct H. 
-- rewrite <-H. unfold path_valid_wrapper. unfold path_valid_bool.  simpl. Abort.
+- rewrite <-H. unfold path_valid_wrapper. unfold path_valid_bool.  reflexivity. 
+- contradiction.
+Qed.
 
 Definition start_correct (start_v : Vertex) (path : list Node_type) : Prop :=
     match path with
