@@ -68,7 +68,7 @@ indicating (current, from)
 *)
 
 Definition Node_type : Type := Vertex * string.
-Definition State_type : Type := V_list * list string.
+Definition State_type : Type := (list Node_type) * (list string).
 Definition Edge_type : Type := Vertex * (Vertex * string).
 Definition Graph_type : Type := list Edge_type.
 
@@ -127,7 +127,8 @@ Fixpoint v_in_vlist (v : Vertex) (vlst : V_list) : bool :=
 
 (* the map function, using list filter *)
 
-Definition v2e_map_filter (cur_v : Vertex) (edge : Edge_type) : bool :=
+(* return true if v is the endpoint of the edge *)
+Definition edge_endwith_v (cur_v : Vertex) (edge : Edge_type) : bool :=
     eqv cur_v (fst edge).
 
 (*for flat_map way*)
@@ -137,81 +138,82 @@ Definition v2e_map_filter (cur_v : Vertex) (edge : Edge_type) : bool :=
     | false => []
     end. *)
 
-Eval vm_compute in v2e_map_filter AB (AB, (AC, tA)).
+Eval vm_compute in edge_endwith_v AB (AB, (AC, tA)).
 
-
+ (* maps cur_v to neighbors, which is a list of (vertex, taixway) *)
 Definition v2e_map (cur_v : Vertex) (graph : Graph_type) : list Edge_type :=
-    filter (v2e_map_filter cur_v) graph.
+    filter (edge_endwith_v cur_v) graph.
 
 Eval vm_compute in v2e_map AB ann_arbor.
 
-(* if node (should be a neighbor) is on this/next taxiway *)
-Definition if_valid_neighbor (cur_s : State_type) (node : Node_type) : bool :=
-    match snd cur_s with
-    | [] => false       (*won't happen*)
-    | a :: nil => a =? snd node
-    | a :: b :: _ => (a =? snd node) || (b =? snd node)
-    end.
-
-(* if the most recent vertex in cur_s is not node *)
-Definition not_last_node (cur_s : State_type) (node : Node_type) : bool :=
-    match head (tail (fst cur_s)) with
-    | None => true (*won't happen*)
-    | Some a => if eqv a (fst node) then false else true
-    end.
-
-(* return a list of neighbor nodes that are 1.reachable with current ATC 2.not the most recently visited node *)
-Definition vertex_connect_to (cur_s : State_type) (graph : Graph_type) : list Node_type :=
-    match head (fst cur_s) with
-    | None => []    (*will never encounter*)
-    | Some v => filter (not_last_node cur_s) (filter (if_valid_neighbor cur_s) (map snd (v2e_map v graph)))
-    end.    
-
-
-Eval vm_compute in vertex_connect_to ([BC; Ch], [tC;tB]) ann_arbor.
-
-
-
-
-(* get the next states of a given taxiway *)
-
-
 (* if node is on next taxiway *)
-Definition if_on_next_taxi (node : Node_type) (cur_s : State_type) : bool :=
+Definition if_on_next_taxi (cur_s : State_type) (node : Node_type) : bool :=
     match snd cur_s with
     | [] => false       (*won't happen*)
     | _ :: nil => false
     | a :: b :: _ => b =? (snd node)
     end.
 
-(* Check if a node is valid, and pack it to state*)
-(* After dropping last node, filtering taixway, the result should be a state*)
-Definition neighbor_packer (cur_s : State_type) (node : Node_type) : list State_type :=
-    if if_on_next_taxi node cur_s then [((fst node)::(fst cur_s), tail (snd cur_s))] else [((fst node)::(fst cur_s), snd cur_s)].
+(* if node is on this (current) taxiway *)
+Definition if_on_this_taxi (cur_s : State_type) (node : Node_type) : bool :=
+    match snd cur_s with
+    | [] => false       (*won't happen*)
+    | a :: _ => a =? snd node
+end.
+
+(* if node (should be a neighbor) is on this/next taxiway *)
+Definition if_valid_neighbor (cur_s : State_type) (node : Node_type) : bool :=
+    orb (if_on_next_taxi cur_s node)  (if_on_this_taxi cur_s node).
+
+(* if the most recent vertex in cur_s is not node *)
+Definition not_last_node (cur_s : State_type) (node : Node_type) : bool :=
+    match head (tail (fst cur_s)) with
+    | None => true (*won't happen*)
+    | Some a => if eqv (fst a) (fst node) then false else true
+    end.
+
+(* return a list of neighbor nodes that are 
+   1.valid neighbors (see if_valid_neighbor)
+   2.not the last visited node *)
+Definition vertex_connect_to (cur_s : State_type) (graph : Graph_type) : list Node_type :=
+    match head (fst cur_s) with
+    | None => []    (*will never encounter*)
+    | Some v => filter (not_last_node cur_s) (filter (if_valid_neighbor cur_s) (map snd (v2e_map (fst v) graph)))
+    end.    
 
 
-Eval vm_compute in neighbor_packer ([BC;Ch], [tC;tB]) (AB, tB).
+Eval vm_compute in vertex_connect_to ([(BC, tC); (Ch, tC)], [tC;tB]) ann_arbor.
 
+
+(* This section are funcs that get the next states of a given taxiway *)
+
+
+(* Check if a node is valid, and pack it to state *)
+(* After dropping last node, filtering taxiway, the result should be a state *)
+Definition neighbor_packer (cur_s : State_type) (node : Node_type) : State_type :=
+    if if_on_next_taxi cur_s node 
+    then (node::(fst cur_s), tail (snd cur_s))
+    else (node::(fst cur_s), snd cur_s).
+
+Eval vm_compute in neighbor_packer ([(BC, tC); (Ch, tC)], [tC;tB]) (AB, tB).
 
 Definition get_next_states (cur_s : State_type) (graph : Graph_type) : list State_type :=
-    flat_map (neighbor_packer cur_s) (vertex_connect_to cur_s graph).
+    map (neighbor_packer cur_s) (vertex_connect_to cur_s graph).
 
-Eval vm_compute in get_next_states ([BC;Ch], [tC;tB]) ann_arbor.
-
-
+Eval vm_compute in get_next_states ([(BC, tC); (Ch, tC)], [tC;tB]) ann_arbor.
 
 
+(* This section are funcs for finding path *)
 
-(* find path *)
 
 Definition if_reach_endpoint (cur_s : State_type) (end_v : Vertex) : bool :=
     match head (fst cur_s) with
     | None => false (* never encounter *)
-    | Some a => eqv a end_v && (length (snd cur_s) == 1)
+    | Some a => eqv (fst a) end_v && (length (snd cur_s) == 1)
     end.
 
 
-Fixpoint find_path (end_v : Vertex) (graph : Graph_type) (round_bound : nat) (cur_s : State_type) : list V_list :=
+Fixpoint find_path (end_v : Vertex) (graph : Graph_type) (round_bound : nat) (cur_s : State_type) : list (list Node_type) :=
     match round_bound with
     | 0 => []
     | S n => 
@@ -220,33 +222,119 @@ Fixpoint find_path (end_v : Vertex) (graph : Graph_type) (round_bound : nat) (cu
          else [])
          ++ (flat_map (find_path end_v graph n) (get_next_states cur_s graph)))
     end
-    
-.    
+.
 
-Definition find_path_wrapper (start_v : Vertex) (end_v : Vertex) (taxiway : list string) (graph : Graph_type) : list V_list :=
-    find_path end_v graph 100 ([start_v], taxiway).
+Definition find_path_wrapper (start_v : Vertex) (end_v : Vertex) (taxiways : list string) 
+(graph : Graph_type) : list (list Node_type) :=
+    find_path end_v graph 100 ([(start_v, "start")], taxiways).
 
+(* turn paths in (list (list Node_type)) into V_list. Only for testing. *) 
+Definition extract_path (paths : list (list Node_type)): list V_list :=
+    map (map fst) paths.
 
-Eval vm_compute in find_path_wrapper A3r A1r [tA3; tA; tA1] ann_arbor.
+Eval vm_compute in (find_path_wrapper A3r A1r [tA3; tA; tA1] ann_arbor).
 
-Example eg_find_path_1 : find_path_wrapper Ch AB [tC] ann_arbor= [].
+Example eg_find_path_1 : extract_path (find_path_wrapper Ch AB [tC] ann_arbor) = [].
 Proof. reflexivity. Qed.
     
-Example eg_find_path_2 : find_path_wrapper Ch BC [tC] ann_arbor= [[Ch; BC]].
+Example eg_find_path_2 : extract_path (find_path_wrapper Ch BC [tC] ann_arbor) = [[Ch; BC]].
 Proof. reflexivity. Qed.
     
-Example eg_find_path_3 : find_path_wrapper Ch AA3 [tC;tB;tA] ann_arbor= [[Ch; BC; AB; AA3]].
+Example eg_find_path_3 : extract_path (find_path_wrapper Ch AA3 [tC;tB;tA] ann_arbor) = [[Ch; BC; AB; AA3]].
 Proof. reflexivity. Qed.
     
-Example eg_find_path_4 : find_path_wrapper AA3 AA1 [tA;tB;tC;tA] ann_arbor= [[AA3; AB; BC; AC; AA1]].
+Example eg_find_path_4 : extract_path (find_path_wrapper AA3 AA1 [tA;tB;tC;tA] ann_arbor) = [[AA3; AB; BC; AC; AA1]].
 Proof. reflexivity. Qed.
     
-Example eg_find_path_5 : find_path_wrapper A3r A1r [tA3; tA; tA1] ann_arbor= [[A3r; AA3; AB; AC; AA1; A1r]].
+Example eg_find_path_5 : extract_path (find_path_wrapper A3r A1r [tA3; tA; tA1] ann_arbor) = [[A3r; AA3; AB; AC; AA1; A1r]].
 Proof. reflexivity. Qed.
     
-Example eg_find_path_6 : find_path_wrapper Ch Ch [tC; tB; tA; tC; tB; tA; tC] ann_arbor= [[Ch; BC; AB; AC; BC; AB; AC; BC; Ch]].
+Example eg_find_path_6 : extract_path (find_path_wrapper Ch Ch [tC; tB; tA; tC; tB; tA; tC] ann_arbor) 
+                         = [[Ch; BC; AB; AC; BC; AB; AC; BC; Ch]].
 Proof. reflexivity. Qed.
 
 
-(* The recursive version of find_path *)
+(* PROOF FOR SOUNDNESS *)
+
+(* path_valid returns true only if one can traverse the path and follow the atc commands.
+   more specifically, it returns true only if:
+   for every step to the next node (Vertex, string) in the path,
+   the associated taxiway exists, and is either the current or the next taxiway. *)
+Fixpoint path_valid_bool (n1 : Node_type) (rest_path : list Node_type) (g : Graph_type) (taxiways : list string) : bool :=
+    match rest_path with
+    | n2::n_rest =>
+        (* if v2 is on current taxiway *)
+        if (if_on_this_taxi ([n2;n1], taxiways) (n2))
+        then path_valid_bool n2 n_rest g taxiways
+        else 
+        if (if_on_next_taxi ([n2;n1], taxiways) (n2))
+        then path_valid_bool n2 n_rest g (tail taxiways)
+        else false (* if n2 is neither on this_taxi nor on next_taxi *)
+    | [] => (* if there is no more step in the path, 
+              it is correct iff there is no more taxiway to take *)
+        match taxiways with 
+            | [] => true 
+            | _  => false
+            end
+    end
+.
+
+
+Definition path_valid_wrapper (path : list Node_type) (g : Graph_type) (taxiways : list string) : bool :=
+    match path with
+    | [] => true
+    | f::l => path_valid_bool f l g taxiways
+    end.
+
+Example path_valid_test : 
+forall path, 
+(In path (find_path_wrapper Ch Ch [tC; tB; tA; tC; tB; tA; tC] ann_arbor)) ->
+(path_valid_wrapper path ann_arbor [tC; tB; tA; tC; tB; tA; tC] = true).
+Proof. intros path H. simpl in H. destruct H. 
+- rewrite <-H. unfold path_valid_wrapper. unfold path_valid_bool.  simpl. Abort.
+
+Definition start_correct (start_v : Vertex) (path : list Node_type) : Prop :=
+    match path with
+    | [] => False
+    | f::r => start_v = (fst f)
+    end.
+
+Definition end_correct (end_v : Vertex) (path : list Node_type) : Prop :=
+    match rev path with
+    | [] => False
+    | f::r => end_v = (fst f)
+    end.
+
+Definition head_is {T : Type} (elem : T)(l : list T) : Prop :=
+    match l with
+    | [] => False
+    | h::r => elem = h
+    end.
+
+Definition n1_n2_connected (n1 n2 : Node_type) (graph : Graph_type) : Prop :=
+    In n2 (map snd (v2e_map n1.1 graph)).
+
+Example test_conn : (n1_n2_connected (Ch, tC) (BC, tC) ann_arbor).
+Proof. unfold n1_n2_connected. simpl. left. reflexivity. Qed.
+
+(* path is connected *) 
+Inductive connected : (list Node_type) -> Graph_type -> Prop :=
+| conn_base
+     (g : Graph_type):  
+     connected [] g
+| conn_induct 
+     (n1 n2 : Node_type) (nodes : list Node_type) (g : Graph_type)
+     (Hconn : n1_n2_connected n1 n2 g)
+     (Hnodes_start_with_n2 : head_is n2 nodes)
+     (IH : connected nodes g) : 
+         connected (n1::nodes) g.
+
+
+Theorem any_path_in_output_is_valid:
+forall start_v end_v taxiways graph path,
+In path (find_path_wrapper start_v end_v taxiways graph) ->
+start_correct start_v path /\
+end_correct start_v path /\
+path_valid_wrapper path graph taxiways /\
+connected path graph.
 
