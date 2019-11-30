@@ -12,27 +12,25 @@ Require Import Coq.Lists.List Coq.Bool.Bool.
 (* string library will overlap vertex (the ctor index), import it first  *)
 
 (*
-Using state (V_list, list string) to represent a 
-    - fst is a list of vertices that previously visited, first is current 
-    - snd is the remaining ATC commend, first is current
+Using *state* (list Node_type, list string) to represent the current search state
+    - fst is a list of vertices that previously visited, head is current 
+    - snd is the remaining taxiways from the ATC command, head is current. Using *ATC* to denote the rest taxiways. 
 
-For each state, we:
-    1. get all nodes it points to
-    2. drop the most recently visited node
-    3. drop all the nodes not on current/next taxiway in ATC command
-    4. pack the rest for further check (recursively or iteratively)
-
-We should be using the None type, since we need map vertex to it's edges
-But...It seems we don't need option type...
+For each *state*:
+    1. If last node in *state* is the end_vertex and ATC has length 1 and 
+       last node is on the taxiway that last ATC, we return this state.
+    2. If the length of the remaining taxiway is no greater than 1 we terminate.
+    3. Then we get all nodes it points to, and drop the most recently visited node, 
+       as well as all the nodes not on current/next taxiway.
+    4. For each remaining neighbor node, we append it to the current state,
+       and drop the head of the ATC command if the neighbor node is on the next
+       taxiway. Then we recursively search these new states.
 
     Basic Type: 
-        Taxiway Name: string
-        Vertex: Vertex or string (it's just an indicator)
-        Graph: list (Vertex * (Vertex * string))
-            - it's a list of (current vertex, (connected-to vertex, taxiway of connected-to))
-            - i.e. the set of edges (directed)
-            - it's consistent with the input csv
+        Taxiway name is a string.
 
+        Vertex: Type : a vertex in the graph
+        
         State_type : Type := V_list * list string.
             - V_list is the previous visited node, in reverse order
             - list string is the rest ATC
@@ -44,9 +42,10 @@ But...It seems we don't need option type...
             - the edge
             - (cur_vertex, (connected-to vertex, taxiway between them))
 
-        Graph_type : Type := list Edge_type.
-            - contains every edges
-
+        Graph_type : Type := list Edge_type. or equivalently, list (Vertex * (Vertex * string)).
+            - it's a list of (current vertex, (connected-to vertex, taxiway of connected-to))
+            - i.e. the set of edges (directed)
+            - it's consistent with the input csv
 
     Key functions:
         vertex_connect_to: Vertex -> Graph -> list Node_type
@@ -274,7 +273,7 @@ Fixpoint path_valid_bool (n1 : Node_type) (rest_path : list Node_type) (g : Grap
     end
 .
 
-Definition path_valid_wrapper (path : list Node_type) (g : Graph_type) (taxiways : list string) : bool :=
+Definition path_valid (path : list Node_type) (g : Graph_type) (taxiways : list string) : bool :=
     match path with
     | [] => true
     | f::l => path_valid_bool f l g taxiways
@@ -283,9 +282,9 @@ Definition path_valid_wrapper (path : list Node_type) (g : Graph_type) (taxiways
 Example path_valid_test : 
 forall path, 
 (In path (find_path_wrapper Ch Ch [tC; tB; tA; tC; tB; tA; tC] ann_arbor)) ->
-(path_valid_wrapper path ann_arbor [tC; tB; tA; tC; tB; tA; tC] = true).
+(path_valid path ann_arbor [tC; tB; tA; tC; tB; tA; tC] = true).
 Proof. intros path H. simpl in H. destruct H. 
-- rewrite <-H. unfold path_valid_wrapper. unfold path_valid_bool.  reflexivity. 
+- rewrite <-H. unfold path_valid. unfold path_valid_bool.  reflexivity. 
 - contradiction.
 Qed.
 
@@ -331,6 +330,6 @@ forall start_v end_v taxiways graph path,
 In path (find_path_wrapper start_v end_v taxiways graph) ->
 start_correct start_v path /\
 end_correct start_v path /\
-path_valid_wrapper path graph taxiways /\
+path_valid path graph taxiways /\
 connected path graph.
 
