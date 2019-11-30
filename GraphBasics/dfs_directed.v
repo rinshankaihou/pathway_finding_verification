@@ -280,33 +280,6 @@ Definition path_valid_wrapper (path : list Node_type) (g : Graph_type) (taxiways
     | f::l => path_valid_bool f l g taxiways
     end.
 
-Fixpoint path_valid_b (n1 : Node_type) (rest_path : list Node_type) (g : Graph_type) (taxiways : list string) : list (list string) :=
-    match rest_path with
-    | n2::n_rest =>
-        (* if v2 is on current taxiway *)
-        if (if_on_this_taxi ([n1;n2], taxiways) (n2))
-        then taxiways :: (path_valid_b n2 n_rest g taxiways)
-        else 
-        if (if_on_next_taxi ([n1;n2], taxiways) (n2))
-        then taxiways :: (path_valid_b n2 n_rest g (tail taxiways))
-        else [] (* if n2 is neither on this_taxi nor on next_taxi *)
-    | [] => [taxiways]
-    end
-.
-
-Definition path_valid_wrapper2 (paths : list(list Node_type)) (g : Graph_type) (taxiways : list string) : list (list string) :=
-    match paths with
-    | [] => []
-    | path::emm => match path with 
-               | [] => [] 
-               | f::l => path_valid_b f l g taxiways 
-               end
-    end.
-Eval vm_compute in 
-(path_valid_wrapper2 
- (find_path_wrapper Ch Ch [tC; tB; tA; tC; tB; tA; tC] ann_arbor) 
- ann_arbor [tC; tB; tA; tC; tB; tA; tC]).
-
 Example path_valid_test : 
 forall path, 
 (In path (find_path_wrapper Ch Ch [tC; tB; tA; tC; tB; tA; tC] ann_arbor)) ->
