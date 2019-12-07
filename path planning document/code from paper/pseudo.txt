@@ -1,0 +1,24 @@
+Find-Path-Aux(D, current, destination, taxiway-names, current-taxiway-name)
+Data: directed expanded graph D, vertex current∈ D, vertex destination∈ G, ATC instructions as a list of
+taxiway names taxiway-names, current taxiway current-taxiway-name
+Result: route as a list ` of edges of D
+create results := ∅
+if vertex current is of the form “destination from w” and taxiway-names = [ ] then
+// case (a) where we have arrived at our destination
+add the empty list [ ] to results
+end
+foreach edge e = (current, v) ∈ G do
+if current-taxiway-name,None and name(e)=current-taxiway-name then
+// case (b) where we stay on the same taxiway
+create res := Find-Path-Aux (D, v, destination, taxiway-names, current-taxiway-name) ;
+if res,None then add res to results ;
+end
+if name(e)=head(taxiway-names) then
+// case (c) where we turn to a different taxiway
+create res := Find-Path-Aux (D, v, destination, tail(taxiway-names), head(taxiway-names)) ;
+if res,None then add res to results ;
+end
+end
+if results = ∅ then return None ;
+else if results = {`} then return ` // size(results)= 1;
+else return Error “Invalid ATC route” // size(results)≥2
