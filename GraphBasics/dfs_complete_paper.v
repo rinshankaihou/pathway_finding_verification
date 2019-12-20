@@ -8,7 +8,7 @@ From GraphBasics Require Export Vertices.
 Import ListNotations.
 Require Import Coq.Lists.List Coq.Bool.Bool.
 
-(* TODO change result to edges *)
+
 
 (*
     Node_type : (Vertex * Vertex)
@@ -110,7 +110,7 @@ Definition find_edge (current : Node_type) (D : Graph_type) : list Edge_type :=
     filter (edge_filter current) D.
 
 
-Definition State_type : Type :=  ((list Node_type) * string) * list string.
+(* Definition State_type : Type :=  ((list Node_type) * string) * list string.
 
 (* ============ helper functions ============*)
     
@@ -119,7 +119,10 @@ Definition is_on_next_taxiway (cur_s : State_type) (e : Edge_type) : bool :=
     | None => false
     | Some t => t =? e.2
     end.
-    
+
+Definition is_on_this_taxiway (cur_s : State_type) (e : Edge_type) : bool :=
+    cur_s.1.2 =? e.2.
+
 Definition if_reach_endpoint (cur_s : State_type) (end_v : Vertex) : bool :=
     match head cur_s.1.1 with
     | None => false (*will never reach*)
@@ -144,7 +147,7 @@ Definition if_reach_endpoint (cur_s : State_type) (end_v : Vertex) : bool :=
 (* The function to pack a edge into a state *)
 (* Original Name: neighbor_packer *)
 Definition packer (cur_s : State_type) (e : Edge_type) : list State_type :=
-    if cur_s.1.2 =? e.2 (* on the same taxiway *)
+    if is_on_this_taxiway cur_s e (* on the same taxiway *)
     then [((e.1.2 ::cur_s.1.1, cur_s.1.2), cur_s.2)]
     else if is_on_next_taxiway cur_s e (* on the next taxiway *)
     then [((e.1.2 ::cur_s.1.1, e.2), tail cur_s.2)]
@@ -152,43 +155,11 @@ Definition packer (cur_s : State_type) (e : Edge_type) : list State_type :=
     
     
 (* the function to handle a state, to insert possible destinations*)
-    
 (* Original Name: get_next_state *)
 Definition state_handle (cur_s : State_type) (D : Graph_type) : list State_type :=
     match head cur_s.1.1 with
     | None => []
-    | Some n => flat_map (packer cur_s) (find_edge  (((Ch, input), (BC, Ch)), C);
-    (((A3r, input), (AA3, A3r)), A3);
-    (((A2r, input), (AB, A2r)), A2);
-    (((A1r, input), (AA1, A1r)), A1);
-    (((AA3, A3r), (AB, AA3)), A);
-    (((AA3, AB), (A3r, AA3)), A3);
-    (((AB, A2r), (AA3, AB)), A);
-    (((AB, A2r), (AC, AB)), A);
-    (((AB, A2r), (BC, AB)), B);
-    (((AB, AA3), (A2r, AB)), A2);
-    (((AB, AA3), (AC, AB)), A);
-    (((AB, AA3), (BC, AB)), B);
-    (((AB, BC), (A2r, AB)), A2);
-    (((AB, BC), (AA3, AB)), A);
-    (((AB, BC), (AC, AB)), A);
-    (((AB, AC), (A2r, AB)), A2);
-    (((AB, AC), (AA3, AB)), A);
-    (((AB, AC), (BC, AB)), B);
-    (((AC, AB), (AA1, AC)), A);
-    (((AC, AB), (BC, AC)), C);
-    (((AC, AA1), (AB, AC)), A);
-    (((AC, AA1), (BC, AC)), C);
-    (((AC, BC), (AB, AC)), A);
-    (((AC, BC), (AA1, AC)), A);
-    (((AA1, A1r), (AC, AA1)), A);
-    (((AA1, AC), (A1r, AA1)), A1);
-    (((BC, Ch), (AB, BC)), B);
-    (((BC, Ch), (AC, BC)), C);
-    (((BC, AB), (Ch, BC)), C);
-    (((BC, AB), (AC, BC)), C);
-    (((BC, AC), (Ch, BC)), C);
-    (((BC, AC), (AB, BC)), B)n D)
+    | Some n => flat_map (packer cur_s) (find_edge n D)
     end.
     
     
@@ -222,7 +193,7 @@ Definition find_path_wrapper (start_v : Vertex) (end_v : Vertex) (ATC : list str
         1. if only one path, give the result
         2. if two or more path, return too_many_path error
         3. if no result returns, give cannot_find error
-        4. if ATC is empty, or we can't start, give atc_errorvscode
+        4. if ATC is empty, or we can't start, give atc_error
     It means if we have wrong ATC command such as from Ch->BC, but ATC=A,
         the error will be cannot_find error, since we assume atc is correct
 *)
@@ -238,6 +209,7 @@ Definition find_path_caller (start_v : Vertex) (end_v : Vertex) (ATC : list stri
     end.
 
 
+    
 Example eg_find_path_1 : find_path_caller Ch AB [C] ann_arbor = CANNOT_FIND.
 Proof. reflexivity. Qed.
     
@@ -255,29 +227,15 @@ Proof. reflexivity. Qed.
     
 Example eg_find_path_6 : find_path_caller Ch Ch [C; B; A; C; B; A; C] ann_arbor
                          = SOME_P [(Ch, input); (BC, Ch); (AB, BC); (AC, AB); (BC, AC); (AB, BC); (AC, AB); (BC, AC); (Ch, BC)].
-Proof. reflexivity. Qed.
+Proof. reflexivity. Qed. *)
 
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+(* ==================================================================*)
+(* ===================== Old Attempts ===============================*)
+(* ==================================================================*)
 
 (*
     In this attempt, we store edge in state, but the problem is
@@ -286,7 +244,7 @@ Proof. reflexivity. Qed.
         3. We can reconstruct list edge from list node
     So we turn to use node
 
-
+*)
 Definition State_type : Type :=  ((list Edge_type) * string) * list string.
 
 (* ============ helper functions ============*)
@@ -363,8 +321,7 @@ Definition find_path_wrapper (start_v : Vertex) (end_v : Vertex) (ATC : list str
 
 
 (* ============ Map to other result  =========== *)
-
-(* pick the endpoint2 of edge *)
+(* pick the endpoint1 of edge *)
 Definition e2n_helper (e : Edge_type) : Node_type := e.1.2.
 
 Definition edge_2_node (le : list Edge_type) : list Node_type :=
@@ -375,6 +332,122 @@ Definition node_result_wrapper (start_v : Vertex) (end_v : Vertex) (ATC : list s
     | None => None
     | Some x => Some (map edge_2_node x)
     end.
+Print map.
+Definition node_result_caller (start_v : Vertex) (end_v : Vertex) (ATC : list string) (D : Graph_type) : Result_type :=
+    match ATC with
+    | [] => ATC_ERROR
+    | t :: rest => match find_path end_v D 100 (([(((start_v, input), (start_v, input)), t)], t), rest) with
+        | [] => CANNOT_FIND
+        | a :: nil => SOME_P (map e2n_helper a)
+        | a :: b :: _ => TOO_MANY_PATH
+        end
+    end.
 
 
-*)
+
+    Example eg_find_path_1 : node_result_caller Ch AB [C] ann_arbor = CANNOT_FIND.
+    Proof. reflexivity. Qed.
+        
+    Example eg_find_path_2 : node_result_caller Ch BC [C] ann_arbor = SOME_P [(Ch, input); (BC, Ch)].
+    Proof. reflexivity. Qed.
+        
+    Example eg_find_path_3 : node_result_caller Ch AA3 [C;B;A] ann_arbor = SOME_P [(Ch, input); (BC, Ch); (AB, BC); (AA3, AB)].
+    Proof. reflexivity. Qed.
+        
+    Example eg_find_path_4 : node_result_caller AA3 AA1 [A;B;C;A] ann_arbor = SOME_P [(AA3, input); (AB, AA3); (BC, AB); (AC, BC); (AA1, AC)].
+    Proof. Abort. (* It's good because AA3 is not a input*)
+        
+    Example eg_find_path_5 : node_result_caller A3r A1r [A3; A; A1] ann_arbor = SOME_P [(A3r, input); (AA3, A3r); (AB, AA3); (AC, AB); (AA1, AC); (A1r, AA1)].
+    Proof. reflexivity. Qed.
+        
+    Example eg_find_path_6 : node_result_caller Ch Ch [C; B; A; C; B; A; C] ann_arbor
+                             = SOME_P [(Ch, input); (BC, Ch); (AB, BC); (AC, AB); (BC, AC); (AB, BC); (AC, AB); (BC, AC); (Ch, BC)].
+    Proof. reflexivity. Qed. 
+
+(* PROOF FOR SOUNDNESS *)
+
+(* path_valid returns true only if one can traverse the path and follow the atc commands.
+   more specifically, it returns true only if:
+   for every step to the next node (Vertex, string) in the path,
+   the associated taxiway exists, and is either the current or the next taxiway. *)
+FIXTHIS!!
+   Fixpoint path_valid_bool (n1 : Node_type) (rest_path : list Node_type) (g : Graph_type) (taxiways : list string) : bool :=
+   match rest_path with
+   | n2::n_rest =>
+       (* if v2 is on current taxiway *)
+       if (if_on_this_taxi ([n1;n2], taxiways) (n2))
+       then path_valid_bool n2 n_rest g taxiways
+       else 
+       if (if_on_next_taxi ([n1;n2], taxiways) (n2))
+       then path_valid_bool n2 n_rest g (tail taxiways)
+       else false (* if n2 is neither on this_taxi nor on next_taxi *)
+   | [] => if eqn 1 (length taxiways) then true else false (* the last taxiway will not be consumed *) 
+   end
+   .
+   
+   Definition path_valid (path : list Node_type) (g : Graph_type) (taxiways : list string) : bool :=
+      match path with
+      | [] => true
+      | f::l => path_valid_bool f l g taxiways
+      end.
+   
+   Example path_valid_test : 
+   forall path, 
+   (In path (find_path_wrapper Ch Ch [tC; tB; tA; tC; tB; tA; tC] ann_arbor)) ->
+   (path_valid path ann_arbor [tC; tB; tA; tC; tB; tA; tC] = true).
+   Proof. intros path H. simpl in H. destruct H. 
+   - rewrite <-H. unfold path_valid. unfold path_valid_bool.  reflexivity. 
+   - contradiction.
+   Qed.
+   
+   Definition start_correct (start_v : Vertex) (path : list Node_type) : Prop :=
+      match path with
+      | [] => False
+      | f::r => start_v = (fst f)
+      end.
+   
+   Definition end_correct (end_v : Vertex) (path : list Node_type) : Prop :=
+      match rev path with
+      | [] => False
+      | f::r => end_v = (fst f)
+      end.
+   
+   Definition head_is {T : Type} (elem : T)(l : list T) : Prop :=
+      match l with
+      | [] => False
+      | h::r => elem = h
+      end.
+   
+   Definition n1_n2_connected (n1 n2 : Node_type) (graph : Graph_type) : Prop :=
+      In n2 (map snd (v2e_map n1.1 graph)).
+   
+   Example test_conn : (n1_n2_connected (Ch, tC) (BC, tC) ann_arbor).
+   Proof. unfold n1_n2_connected. simpl. left. reflexivity. Qed.
+   
+   (* path is connected *) 
+   Inductive connected : (list Node_type) -> Graph_type -> Prop :=
+   | conn_base
+       (g : Graph_type):  
+       connected [] g
+   | conn_induct 
+       (n1 n2 : Node_type) (nodes : list Node_type) (g : Graph_type)
+       (Hconn : n1_n2_connected n1 n2 g)
+       (Hnodes_start_with_n2 : head_is n2 nodes)
+       (IH : connected nodes g) : 
+           connected (n1::nodes) g.
+   
+   Definition any_path_in_output_is_valid : Prop :=
+   forall start_v end_v taxiways graph path,
+   In path (find_path_wrapper start_v end_v taxiways graph) ->
+   start_correct start_v path.
+   Check any_path_in_output_is_valid.
+   QuickChick any_path_in_output_is_valid.
+   
+   Theorem any_path_in_output_is_valid:
+   forall start_v end_v taxiways graph path,
+   In path (find_path_wrapper start_v end_v taxiways graph) ->
+   start_correct start_v path /\
+   end_correct start_v path /\
+   path_valid path graph taxiways /\
+   connected path graph.
+   Proof. hammer.

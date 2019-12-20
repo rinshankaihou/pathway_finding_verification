@@ -7,8 +7,10 @@ Require Import Coq.Lists.List.
 From GraphBasics Require Export Vertices.
 Import ListNotations.
 Require Import Coq.Lists.List Coq.Bool.Bool.
-
-
+From Hammer Require Import Hammer.
+From QuickChick Require Import QuickChick.
+From QuickChick Require Import QuickChick.
+Import QcDefaultNotation. Open Scope qc_scope.
 (* string library will overlap vertex (the ctor index), import it first  *)
 
 (*
@@ -39,7 +41,7 @@ For each *state*:
             - the information pair of a vertex
 
         Edge_type : Type := Vertex * (Vertex * string)
-            - the edge
+            - the edgeFrom Hammer Require Import Hammer.
             - (cur_vertex, (connected-to vertex, taxiway between them))
 
         Graph_type : Type := list Edge_type. or equivalently, list (Vertex * (Vertex * string)).
@@ -324,6 +326,12 @@ Inductive connected : (list Node_type) -> Graph_type -> Prop :=
      (IH : connected nodes g) : 
          connected (n1::nodes) g.
 
+Definition any_path_in_output_is_valid : Prop :=
+forall start_v end_v taxiways graph path,
+In path (find_path_wrapper start_v end_v taxiways graph) ->
+start_correct start_v path.
+Check any_path_in_output_is_valid.
+QuickChick any_path_in_output_is_valid.
 
 Theorem any_path_in_output_is_valid:
 forall start_v end_v taxiways graph path,
@@ -332,4 +340,4 @@ start_correct start_v path /\
 end_correct start_v path /\
 path_valid path graph taxiways /\
 connected path graph.
-
+Proof. hammer.
