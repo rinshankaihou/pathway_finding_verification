@@ -8,6 +8,7 @@ From GraphBasics Require Export Vertices.
 Import ListNotations.
 Require Import Coq.Lists.List Coq.Bool.Bool.
 
+From Hammer Require Import Hammer.
 
 
 (*
@@ -122,7 +123,7 @@ Definition is_on_next_taxiway (cur_s : State_type) (e : Edge_type) : bool :=
 
 Definition is_on_this_taxiway (cur_s : State_type) (e : Edge_type) : bool :=
     cur_s.1.2 =? e.2.
-
+valid_bool
 Definition if_reach_endpoint (cur_s : State_type) (end_v : Vertex) : bool :=
     match head cur_s.1.1 with
     | None => false (*will never reach*)
@@ -237,14 +238,7 @@ Proof. reflexivity. Qed. *)
 (* ===================== Old Attempts ===============================*)
 (* ==================================================================*)
 
-(*
-    In this attempt, we store edge in state, but the problem is
-        1. we don't need edge, since we already store current taxiway in state
-        2. it's not intuitive, since the structure is complex
-        3. We can reconstruct list edge from list node
-    So we turn to use node
 
-*)
 Definition State_type : Type :=  ((list Edge_type) * string) * list string.
 
 (* ============ helper functions ============*)
@@ -254,6 +248,10 @@ Definition is_on_next_taxiway (cur_s : State_type) (e : Edge_type) : bool :=
     | None => false
     | Some t => t =? e.2
     end.
+
+
+Definition is_on_this_taxiway (cur_s : State_type) (e : Edge_type) : bool :=
+    cur_s.1.2 =? e.2.
 
 Definition if_reach_endpoint (cur_s : State_type) (end_v : Vertex) : bool :=
     match head cur_s.1.1 with
@@ -279,7 +277,7 @@ Definition if_reach_endpoint (cur_s : State_type) (end_v : Vertex) : bool :=
 (* The function to pack a edge into a state *)
 (* Original Name: neighbor_packer *)
 Definition packer (cur_s : State_type) (e : Edge_type) : list State_type :=
-    if cur_s.1.2 =? e.2 (* on the same taxiway *)
+    if is_on_this_taxiway cur_s e
     then [((e::cur_s.1.1, cur_s.1.2), cur_s.2)]
     else if is_on_next_taxiway cur_s e (* on the next taxiway *)
     then [((e::cur_s.1.1, e.2), tail cur_s.2)]
@@ -294,7 +292,7 @@ Definition state_handle (cur_s : State_type) (D : Graph_type) : list State_type 
     | Some n => flat_map (packer cur_s) (find_edge n.1.2 D)
     end.
 
-
+    
 
 (* ================= main function ===============*)
 (* we return list list edges as results, it can be map to other type*)
@@ -302,6 +300,7 @@ Definition state_handle (cur_s : State_type) (D : Graph_type) : list State_type 
     The design is that in initial state, edge can't be empty
     Put the initial edge as: ()
 *)
+
 Fixpoint find_path (end_v : Vertex) (D : Graph_type) (round_bound : nat) (cur_s : State_type) : list (list Edge_type) :=
     match round_bound with
     | 0 => []
@@ -319,8 +318,7 @@ Definition find_path_wrapper (start_v : Vertex) (end_v : Vertex) (ATC : list str
     | t :: rest => Some (find_path end_v D 100 (([(((start_v, input), (start_v, input)), t)], t), rest))
     end.
 
-
-(* ============ Map to other result  =========== *)
+(* ============ Map list Edge_type to list Node  =========== *)
 (* pick the endpoint1 of edge *)
 Definition e2n_helper (e : Edge_type) : Node_type := e.1.2.
 
@@ -333,6 +331,7 @@ Definition node_result_wrapper (start_v : Vertex) (end_v : Vertex) (ATC : list s
     | Some x => Some (map edge_2_node x)
     end.
 Print map.
+
 Definition node_result_caller (start_v : Vertex) (end_v : Vertex) (ATC : list string) (D : Graph_type) : Result_type :=
     match ATC with
     | [] => ATC_ERROR
@@ -366,39 +365,103 @@ Definition node_result_caller (start_v : Vertex) (end_v : Vertex) (ATC : list st
 
 (* PROOF FOR SOUNDNESS *)
 
+(* INPUT list Edge_type, the pathway names of it is something like AACCCB *)
+(* OUTPUT list strings, eg ACB *)
+Fixpoint suppress (path_f : Edge_type) (path_r : list Edge_type) : list string :=
+    match path_r with
+    | [] => [path_f.2]
+    | path_r_f::path_r_r => 
+        if (path_f.2 =? path_r_f.2) 
+        then (suppress path_r_f path_r_r)
+        else path_f.2::(suppress path_r_f path_r_r)
+    end.
+
+(* sanity check*)
+Example suppress_eg1 : suppress (((Ch, input), (BC, Ch)),     C)
+                                [(((Ch, input), (BC, Ch)),    C);
+                                 (((A3r, input), (AA3, A3r)), A3);
+                                 (((A3r, input), (AA3, A3r)), A3);
+                                 (((A2r, input), (AB, A2r)),  A2);
+                                 (((A2r, input), (AB, A2r)),  A2)]
+                       = [C; A3; A2].
+Proof. reflexivity. Qed.
+
 (* path_valid returns true only if one can traverse the path and follow the atc commands.
    more specifically, it returns true only if:
    for every step to the next node (Vertex, string) in the path,
    the associated taxiway exists, and is either the current or the next taxiway. *)
-FIXTHIS!!
-   Fixpoint path_valid_bool (n1 : Node_type) (rest_path : list Node_type) (g : Graph_type) (taxiways : list string) : bool :=
-   match rest_path with
-   | n2::n_rest =>
-       (* if v2 is on current taxiway *)
-       if (if_on_this_taxi ([n1;n2], taxiways) (n2))
-       then path_valid_bool n2 n_rest g taxiways
-       else 
-       if (if_on_next_taxi ([n1;n2], taxiways) (n2))
-       then path_valid_bool n2 n_rest g (tail taxiways)
-       else false (* if n2 is neither on this_taxi nor on next_taxi *)
-   | [] => if eqn 1 (length taxiways) then true else false (* the last taxiway will not be consumed *) 
-   end
-   .
-   
-   Definition path_valid (path : list Node_type) (g : Graph_type) (taxiways : list string) : bool :=
-      match path with
-      | [] => true
-      | f::l => path_valid_bool f l g taxiways
-      end.
-   
-   Example path_valid_test : 
-   forall path, 
-   (In path (find_path_wrapper Ch Ch [tC; tB; tA; tC; tB; tA; tC] ann_arbor)) ->
-   (path_valid path ann_arbor [tC; tB; tA; tC; tB; tA; tC] = true).
-   Proof. intros path H. simpl in H. destruct H. 
-   - rewrite <-H. unfold path_valid. unfold path_valid_bool.  reflexivity. 
-   - contradiction.
-   Qed.
+Fixpoint path_follow_atc (cur_path : list Edge_type) (taxiways : list string) : Prop :=
+    match cur_path, taxiways with
+    | [], [] => True
+    | cur_path_f::cur_path_r, _ => (suppress cur_path_f cur_path_r) = taxiways
+    | _, _ => False
+    end.
+
+(* sanity check*)
+Example path_follow_atc_eg1 : path_follow_atc  [(((Ch, input), (BC, Ch)),    C);
+                                                (((A3r, input), (AA3, A3r)), A3);
+                                                (((A3r, input), (AA3, A3r)), A3);
+                                                (((A2r, input), (AB, A2r)),  A2);
+                                                (((A2r, input), (AB, A2r)),  A2)]
+                                                [C; A3; A2].
+Proof. reflexivity. Qed.
+
+Definition edge_conn (e1 : Edge_type) (e2 : Edge_type) : Prop :=
+    e1.1.2 = e2.1.1.
+
+(* if path is connected*)
+Fixpoint path_conn (path : list Edge_type): Prop :=
+    match path with
+    | path_f::path_r => match path_r with
+        | path_s::path_r_r => (edge_conn path_f path_s) /\ (path_conn path_r)
+        | [] => True
+        end
+    | [] => True (* a path shorter than 2 edges is trivially connected *)
+    end.
+
+Example path_conn_eg1 : path_conn  [(((Ch, input), (BC, Ch)),    C);
+                                    (((BC, Ch), (AA3, A3r)), A3)].
+Proof. simpl. unfold edge_conn. simpl. split. reflexivity. reflexivity. Qed.
+
+Lemma state_handle_conn : forall s prev_s D,
+    path_conn (rev prev_s.1.1) ->
+    In s (state_handle prev_s D) ->
+    path_conn (rev s.1.1).
+Proof. intros next_s s D IH H. unfold path_conn. Admitted.
+
+(* Lemma flat_map_conn : forall s, 
+    In path (flat_map (find_path end_v D rb) (state_handle s D)) -> 
+    path_conn path. *)
+
+(* output of find_path is connected if current path in state is connected *)
+Lemma find_path_conn:
+   forall path end_v D round_bound s res,
+   path_conn (rev s.1.1) ->
+   res = (find_path end_v D round_bound s) ->
+   In path res ->
+   path_conn path.
+Proof. intros path end_v D round_bound s res H1 H2 H3.
+(* H1: conn cur_path *)
+induction round_bound as [| rb  IHrb].
+- unfold find_path in H2. simpl in H2. rewrite H2 in H3. contradiction.
+- unfold find_path in H2. destruct (if_reach_endpoint s end_v).
+    + (* reached endpoint *) rewrite -> H2 in H3. simpl in H3. 
+        destruct H3 as [H4|H5].
+        * (* path is rev s.1.1 *) rewrite -> H4 in H1. exact H1.
+        * (* path is given in recursive call of find_path *) 
+            fold find_path in H5.
+            fold find_path in H2.
+            apply in_flat_map in H5.
+CheckPoint
+
+
+
+
+Theorem output_path_follow_atc:
+   forall path end_v D round_bound cur_path atc,
+   In path (find_path end_v D round_bound (cur_path, atc)) ->
+   path_conn path.
+
    
    Definition start_correct (start_v : Vertex) (path : list Node_type) : Prop :=
       match path with
@@ -418,23 +481,7 @@ FIXTHIS!!
       | h::r => elem = h
       end.
    
-   Definition n1_n2_connected (n1 n2 : Node_type) (graph : Graph_type) : Prop :=
-      In n2 (map snd (v2e_map n1.1 graph)).
    
-   Example test_conn : (n1_n2_connected (Ch, tC) (BC, tC) ann_arbor).
-   Proof. unfold n1_n2_connected. simpl. left. reflexivity. Qed.
-   
-   (* path is connected *) 
-   Inductive connected : (list Node_type) -> Graph_type -> Prop :=
-   | conn_base
-       (g : Graph_type):  
-       connected [] g
-   | conn_induct 
-       (n1 n2 : Node_type) (nodes : list Node_type) (g : Graph_type)
-       (Hconn : n1_n2_connected n1 n2 g)
-       (Hnodes_start_with_n2 : head_is n2 nodes)
-       (IH : connected nodes g) : 
-           connected (n1::nodes) g.
    
    Definition any_path_in_output_is_valid : Prop :=
    forall start_v end_v taxiways graph path,
@@ -451,3 +498,5 @@ FIXTHIS!!
    path_valid path graph taxiways /\
    connected path graph.
    Proof. hammer.
+   Lemma flat_map_conn : forall s prev,
+   sta
