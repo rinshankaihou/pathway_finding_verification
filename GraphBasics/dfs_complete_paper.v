@@ -435,16 +435,18 @@ Proof. intros next_s s D IH H. unfold path_conn. Admitted.
 
 (* output of find_path is connected if current path in state is connected *)
 Lemma find_path_conn:
-   forall path end_v D round_bound s res,
+   forall round_bound path end_v D  s res,
    path_conn (rev s.1.1) ->
    res = (find_path end_v D round_bound s) ->
    In path res ->
    path_conn path.
-Proof. intros path end_v D round_bound s res H1 H2 H3.
+Proof. intros round_bound. induction round_bound as [| rb  IHrb].
+- intros path end_v D  s res H1 H2 H3.
 (* H1: conn cur_path *)
-induction round_bound as [| rb  IHrb].
-- unfold find_path in H2. simpl in H2. rewrite H2 in H3. contradiction.
-- unfold find_path in H2. destruct (if_reach_endpoint s end_v).
+
+ unfold find_path in H2. rewrite H2 in H3. simpl in H3. contradiction.
+- intros path end_v D  s res H1 H2 H3.
+  unfold find_path in H2. destruct (if_reach_endpoint s end_v).
     + (* reached endpoint *) rewrite -> H2 in H3. simpl in H3. 
         destruct H3 as [H4|H5].
         * (* path is rev s.1.1 *) rewrite -> H4 in H1. exact H1.
@@ -452,7 +454,8 @@ induction round_bound as [| rb  IHrb].
             fold find_path in H5.
             fold find_path in H2.
             apply in_flat_map in H5.
-CheckPoint
+(* sub goals: 
+        path_conn (rev )*)
 
 
 
