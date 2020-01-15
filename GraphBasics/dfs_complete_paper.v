@@ -406,10 +406,29 @@ Example path_follow_atc_eg1 : path_follow_atc  [(((Ch, input), (BC, Ch)),    C);
                                                 [C; A3; A2].
 Proof. reflexivity. Qed.
 
-Definition edge_conn (e1 : Edge_type) (e2 : Edge_type) : Prop :=
+(* edge_conn AB BC *)
+Definition _edge_conn (e1 : Edge_type) (e2 : Edge_type) : Prop :=
     e1.1.2 = e2.1.1.
 
-(* if path is connected*)
+(* if path is connected, eg (AB BC CD) *)
+Fixpoint _path_conn (path : list Edge_type): Prop :=
+    match path with
+    | path_f::path_r => match path_r with
+        | path_s::path_r_r => (_edge_conn path_f path_s) /\ (_path_conn path_r)
+        | [] => True
+        end
+    | [] => True (* a path shorter than 2 edges is trivially connected *)
+    end.
+
+Example path_conn_eg1 : _path_conn  [(((Ch, input), (BC, Ch)),    C);
+(((BC, Ch), (AA3, A3r)), A3)].
+Proof. simpl. unfold _edge_conn. simpl. split. reflexivity. reflexivity. Qed.
+
+(* edge_conn BC AB *)
+Definition edge_conn (e1 : Edge_type) (e2 : Edge_type) : Prop :=
+    e1.1.1 = e2.1.2.
+
+(* if rev path is connected, eg (CD BC AB) *)
 Fixpoint path_conn (path : list Edge_type): Prop :=
     match path with
     | path_f::path_r => match path_r with
@@ -419,21 +438,69 @@ Fixpoint path_conn (path : list Edge_type): Prop :=
     | [] => True (* a path shorter than 2 edges is trivially connected *)
     end.
 
-Example path_conn_eg1 : path_conn  [(((Ch, input), (BC, Ch)),    C);
-                                    (((BC, Ch), (AA3, A3r)), A3)].
-Proof. simpl. unfold edge_conn. simpl. split. reflexivity. reflexivity. Qed.
+Lemma eq_vertex : forall v1 v2, eqv v1 v2 <-> v1 = v2.
+Proof. intros v1 v2.  split. 
+-intros H. destruct v1, v2. unfold eqv in H. apply beq_nat_true in H. auto.
+-intros H.  destruct v1, v2. unfold eqv. inversion H. hammer. (* don't know how to prove (n0 =? n0). gotta hammer *)
+Qed.
 
-Lemma state_handle_conn : forall s prev_s D,
-    path_conn (rev prev_s.1.1) ->
-    In s (state_handle prev_s D) ->
-    path_conn (rev s.1.1).
-Proof. intros next_s s D IH H. unfold path_conn. Admitted.
+(* if e1 ends at node n, then e2 given by find_edge starts at the same node n *)
+Lemma find_edge_conn : forall e1 e2 n D, e1.1.2 = n -> In e2 (find_edge n D) -> edge_conn e2 e1.
+Proof. intros e1 e2 n D H1 H2. unfold find_edge in H2. apply filter_In in H2. destruct H2.
+    unfold edge_conn.
+    unfold edge_filter in H0. rewrite -> H1. apply andb_true_iff in H0. destruct H0. destruct e2.1.1. destruct n.
+    Ltac temp H1 := simpl in H1; apply eq_vertex in H1; rewrite H1.
+    temp H0. temp H2. reflexivity.
+Qed.
+
+
+
+Lemma state_handle_conn : forall ns s D,
+    path_conn s.1.1 ->
+    In ns (state_handle s D) ->
+    path_conn ns.1.1.
+Proof. intros ns s D IH H. unfold state_handle in H. unfold hd_error in H.
+    destruct s.1.1 as [| path_hd path_tail] eqn:Hpath.
+    - simpl in H. contradiction.
+    - apply in_flat_map in H. elim H. intros n_edge H2. destruct H2 as [H2 H3].
+        unfold packer in H3. 
+
+        unfold is_on_this_taxiway in H3.
+        destruct (s.1.2 =? n_edge.2) eqn:Heqn.
+
+        + (* n_edge on this taxiway *) 
+            simpl in H3.
+            destruct H3 as [H3|Contra].
+            * rewrite <- H3. simpl. rewrite -> Hpath. split.
+                {unfold edge_conn. 
+                unfold find_edge in H2. simpl in H2.
+                hammer. }
+                {assumption. } 
+            * contradiction.
+        + unfold is_on_next_taxiway in H3. destruct (hd_error s.2) eqn:Heqn2.
+            * unfold hd_error in Heqn2. destruct s.2 as [| s'] eqn:Heqn3  in Heqn2.  {inversion Heqn2. } 
+            {inversion Heqn2. 
+        
+        destruct (s0 =? n_edge.2).
+        (* n_edge on next taxiway *)  
+        (* copy proof in the previous case*)
+        - simpl in H3.
+            destruct H3 as [H3|Contra].
+            * rewrite <- H3. simpl. rewrite -> Hpath. split.
+                {unfold edge_conn. 
+                unfold find_edge in H2. simpl in H2.
+                hammer. }
+                {assumption. } 
+            * contradiction. }
+        - simpl in H3. contradiction H3. - Show.
+        unfold path_conn.
+ 
 
 (* Lemma flat_map_conn : forall s, 
     In path (flat_map (find_path end_v D rb) (state_handle s D)) -> 
     path_conn path. *)
 
-(* output of find_path is connected if current path in state is connected *)
+(* path in the result given by find_path is connected if current path in state is connected *)
 Lemma find_path_conn:
    forall round_bound path end_v D  s res,
    path_conn (rev s.1.1) ->
@@ -453,7 +520,28 @@ Proof. intros round_bound. induction round_bound as [| rb  IHrb].
         * (* path is given in recursive call of find_path *) 
             fold find_path in H5.
             fold find_path in H2.
+
             apply in_flat_map in H5.
+            elim H5. intros ns H6. destruct H6 as [H6 H7]. 
+            apply IHrb with (res := find_path end_v D rb ns) (end_v := end_v) (D := D) (s := ns).
+                {apply state_handle_conn with (s := s) (D := D).
+                 assumption. assumption. }
+                {reflexivity. }
+                {assumption. }
+    + (* not reached end point yet. proof is similar. Consider refactoring? *)
+        fold find_path in H2. simpl in H2.
+        rewrite -> H2 in H3. rename H3 into H5. (* so that I can copy proof in the previous case directly *)
+
+            apply in_flat_map in H5.
+            elim H5. intros ns H6. destruct H6 as [H6 H7]. 
+            apply IHrb with (res := find_path end_v D rb ns) (end_v := end_v) (D := D) (s := ns).
+                {apply state_handle_conn with (s := s) (D := D).
+                 assumption. assumption. }
+                {reflexivity. }
+                {assumption. }
+Qed.
+
+       
 (* sub goals: 
         path_conn (rev )*)
 
@@ -486,7 +574,7 @@ Theorem output_path_follow_atc:
    
    
    
-   Definition any_path_in_output_is_valid : Prop :=
+   Definition any_path_in_output_is_valid : Prop := e
    forall start_v end_v taxiways graph path,
    In path (find_path_wrapper start_v end_v taxiways graph) ->
    start_correct start_v path.
