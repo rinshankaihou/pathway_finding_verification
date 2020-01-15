@@ -110,135 +110,6 @@ Definition edge_filter (current : Node_type) (e : Edge_type) : bool :=
 Definition find_edge (current : Node_type) (D : Graph_type) : list Edge_type :=
     filter (edge_filter current) D.
 
-
-(* Definition State_type : Type :=  ((list Node_type) * string) * list string.
-
-(* ============ helper functions ============*)
-    
-Definition is_on_next_taxiway (cur_s : State_type) (e : Edge_type) : bool :=
-    match head cur_s.2 with
-    | None => false
-    | Some t => t =? e.2
-    end.
-
-Definition is_on_this_taxiway (cur_s : State_type) (e : Edge_type) : bool :=
-    cur_s.1.2 =? e.2.
-valid_bool
-Definition if_reach_endpoint (cur_s : State_type) (end_v : Vertex) : bool :=
-    match head cur_s.1.1 with
-    | None => false (*will never reach*)
-    | Some n => (eqv n.1 end_v) && (eqn (length cur_s.2) 0)
-    end.  
-    
-    
-(* =================  state handler functions ==============*)
-(*
-    for each edge starts from current:
-        if on same taxiway => return [new state]
-        else if on next taxiway => return [new state]
-        else => return []
-    
-    using flat_map to operate on all edges 
-    
-    since (prev, current) won't connect back, so don't need to check back
-    the edge in complete graph is naturally valid, so don't to check valid 
-*)
-    
-    
-(* The function to pack a edge into a state *)
-(* Original Name: neighbor_packer *)
-Definition packer (cur_s : State_type) (e : Edge_type) : list State_type :=
-    if is_on_this_taxiway cur_s e (* on the same taxiway *)
-    then [((e.1.2 ::cur_s.1.1, cur_s.1.2), cur_s.2)]
-    else if is_on_next_taxiway cur_s e (* on the next taxiway *)
-    then [((e.1.2 ::cur_s.1.1, e.2), tail cur_s.2)]
-    else [].
-    
-    
-(* the function to handle a state, to insert possible destinations*)
-(* Original Name: get_next_state *)
-Definition state_handle (cur_s : State_type) (D : Graph_type) : list State_type :=
-    match head cur_s.1.1 with
-    | None => []
-    | Some n => flat_map (packer cur_s) (find_edge n D)
-    end.
-    
-    
-    
-(* ================= main function ===============*)
-(* we return list list edges as results, it can be map to other type*)
-(* 
-    The design is that in initial state, edge can't be empty
-    Put the initial edge as: ()
-*)
-Fixpoint find_path (end_v : Vertex) (D : Graph_type) (round_bound : nat) (cur_s : State_type) : list (list Node_type) :=
-    match round_bound with
-    | 0 => []
-    | S n =>
-        (if if_reach_endpoint cur_s end_v  (*reach endpoint*)
-        then [rev cur_s.1.1]
-        else []) ++
-        (flat_map (find_path end_v D n) (state_handle cur_s D))
-    end.
-    
-    
-Definition find_path_wrapper (start_v : Vertex) (end_v : Vertex) (ATC : list string) (D : Graph_type) : option (list (list Node_type)) :=
-    match ATC with
-    | [] => None (* ATC error *)
-    | t :: rest => Some (find_path end_v D 100 (([(start_v, input)], t), rest))
-    end.
-    
-(* 
-    This function try to deliver the result, or potential error 
-    This function is to replace find_path_wrapper
-        1. if only one path, give the result
-        2. if two or more path, return too_many_path error
-        3. if no result returns, give cannot_find error
-        4. if ATC is empty, or we can't start, give atc_error
-    It means if we have wrong ATC command such as from Ch->BC, but ATC=A,
-        the error will be cannot_find error, since we assume atc is correct
-*)
-
-Definition find_path_caller (start_v : Vertex) (end_v : Vertex) (ATC : list string) (D : Graph_type) : Result_type :=
-    match ATC with
-    | [] => ATC_ERROR
-    | t :: rest => match find_path end_v D 100 (([(start_v, input)], t), rest) with
-        | [] => CANNOT_FIND
-        | a :: nil => SOME_P a
-        | a :: b :: _ => TOO_MANY_PATH
-        end
-    end.
-
-
-    
-Example eg_find_path_1 : find_path_caller Ch AB [C] ann_arbor = CANNOT_FIND.
-Proof. reflexivity. Qed.
-    
-Example eg_find_path_2 : find_path_caller Ch BC [C] ann_arbor = SOME_P [(Ch, input); (BC, Ch)].
-Proof. reflexivity. Qed.
-    
-Example eg_find_path_3 : find_path_caller Ch AA3 [C;B;A] ann_arbor = SOME_P [(Ch, input); (BC, Ch); (AB, BC); (AA3, AB)].
-Proof. reflexivity. Qed.
-    
-Example eg_find_path_4 : find_path_caller AA3 AA1 [A;B;C;A] ann_arbor = SOME_P [(AA3, input); (AB, AA3); (BC, AB); (AC, BC); (AA1, AC)].
-Proof. Abort. (* It's good because AA3 is not a input*)
-    
-Example eg_find_path_5 : find_path_caller A3r A1r [A3; A; A1] ann_arbor = SOME_P [(A3r, input); (AA3, A3r); (AB, AA3); (AC, AB); (AA1, AC); (A1r, AA1)].
-Proof. reflexivity. Qed.
-    
-Example eg_find_path_6 : find_path_caller Ch Ch [C; B; A; C; B; A; C] ann_arbor
-                         = SOME_P [(Ch, input); (BC, Ch); (AB, BC); (AC, AB); (BC, AC); (AB, BC); (AC, AB); (BC, AC); (Ch, BC)].
-Proof. reflexivity. Qed. *)
-
-
-
-
-
-(* ==================================================================*)
-(* ===================== Old Attempts ===============================*)
-(* ==================================================================*)
-
-
 Definition State_type : Type :=  ((list Edge_type) * string) * list string.
 
 (* ============ helper functions ============*)
@@ -478,35 +349,39 @@ Proof. intros ns s D IH H. unfold state_handle in H. unfold hd_error in H.
                 {assumption. } 
             * contradiction.
         + unfold is_on_next_taxiway in H3. destruct (hd_error s.2) eqn:Heqn2.
-            * unfold hd_error in Heqn2. destruct s.2 as [| s'] eqn:Heqn3  in Heqn2.  {inversion Heqn2. } 
-            {inversion Heqn2. 
+            * unfold hd_error in Heqn2. 
+                destruct s.2 as [| s'] eqn:Heqn3 in Heqn2.  
+                    {inversion Heqn2. } 
+                    {inversion Heqn2. 
         
-        destruct (s0 =? n_edge.2).
-        (* n_edge on next taxiway *)  
-        (* copy proof in the previous case*)
-        - simpl in H3.
-            destruct H3 as [H3|Contra].
-            * rewrite <- H3. simpl. rewrite -> Hpath. split.
-                {unfold edge_conn. 
-                unfold find_edge in H2. simpl in H2.
-                hammer. }
-                {assumption. } 
-            * contradiction. }
-        - simpl in H3. contradiction H3. - Show.
-        unfold path_conn.
- 
+                    destruct (s0 =? n_edge.2).
+                    (* n_edge on next taxiway *)  
+                    (* copy proof in the previous case*)
+                    - simpl in H3.
+                        destruct H3 as [H3|Contra].
+                        + rewrite <- H3. simpl. rewrite -> Hpath. split.
+                            {unfold edge_conn. 
+                            unfold find_edge in H2. simpl in H2.
+                            hammer. }
+                            {assumption. } 
+                        + contradiction. 
+                    - simpl in H3. contradiction H3. }
+            * contradiction.
+Qed.
 
-(* Lemma flat_map_conn : forall s, 
-    In path (flat_map (find_path end_v D rb) (state_handle s D)) -> 
-    path_conn path. *)
+Lemma path_conn_equiv : forall path, path_conn path -> _path_conn (rev path).
+Proof. intros p H. induction p.
+- trivial.
+Admitted.
+(* if want _path_conn, prove this. current version only uses path_conn *)
 
 (* path in the result given by find_path is connected if current path in state is connected *)
 Lemma find_path_conn:
    forall round_bound path end_v D  s res,
-   path_conn (rev s.1.1) ->
+   path_conn s.1.1 ->
    res = (find_path end_v D round_bound s) ->
    In path res ->
-   path_conn path.
+   path_conn (rev path).
 Proof. intros round_bound. induction round_bound as [| rb  IHrb].
 - intros path end_v D  s res H1 H2 H3.
 (* H1: conn cur_path *)
@@ -516,7 +391,7 @@ Proof. intros round_bound. induction round_bound as [| rb  IHrb].
   unfold find_path in H2. destruct (if_reach_endpoint s end_v).
     + (* reached endpoint *) rewrite -> H2 in H3. simpl in H3. 
         destruct H3 as [H4|H5].
-        * (* path is rev s.1.1 *) rewrite -> H4 in H1. exact H1.
+        * (* path is rev s.1.1 *) rewrite <- H4 . hammer.
         * (* path is given in recursive call of find_path *) 
             fold find_path in H5.
             fold find_path in H2.
@@ -541,9 +416,7 @@ Proof. intros round_bound. induction round_bound as [| rb  IHrb].
                 {assumption. }
 Qed.
 
-       
-(* sub goals: 
-        path_conn (rev )*)
+(* CHECK POINT *) 
 
 
 
