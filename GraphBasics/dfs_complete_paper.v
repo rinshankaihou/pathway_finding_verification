@@ -139,9 +139,7 @@ Definition if_reach_endpoint (cur_s : State_type) (end_v : Vertex) : bool :=
         else => return []
 
     using flat_map to operate on all edges 
-
-    since (prev, current) won't connect back, so don't need to check back
-    the edge in complete graph is naturally valid, so don't to check valid 
+((start_v, input), (start_v, input))
 *)
 
 
@@ -236,46 +234,9 @@ Definition node_result_caller (start_v : Vertex) (end_v : Vertex) (ATC : list st
 
 (* PROOF FOR SOUNDNESS *)
 
-(* INPUT list Edge_type, the pathway names of it is something like AACCCB *)
-(* OUTPUT list strings, eg ACB *)
-Fixpoint suppress (path_f : Edge_type) (path_r : list Edge_type) : list string :=
-    match path_r with
-    | [] => [path_f.2]
-    | path_r_f::path_r_r => 
-        if (path_f.2 =? path_r_f.2) 
-        then (suppress path_r_f path_r_r)
-        else path_f.2::(suppress path_r_f path_r_r)
-    end.
 
-(* sanity check*)
-Example suppress_eg1 : suppress (((Ch, input), (BC, Ch)),     C)
-                                [(((Ch, input), (BC, Ch)),    C);
-                                 (((A3r, input), (AA3, A3r)), A3);
-                                 (((A3r, input), (AA3, A3r)), A3);
-                                 (((A2r, input), (AB, A2r)),  A2);
-                                 (((A2r, input), (AB, A2r)),  A2)]
-                       = [C; A3; A2].
-Proof. reflexivity. Qed.
 
-(* path_valid returns true only if one can traverse the path and follow the atc commands.
-   more specifically, it returns true only if:
-   for every step to the next node (Vertex, string) in the path,
-   the associated taxiway exists, and is either the current or the next taxiway. *)
-Fixpoint path_follow_atc (cur_path : list Edge_type) (taxiways : list string) : Prop :=
-    match cur_path, taxiways with
-    | [], [] => True
-    | cur_path_f::cur_path_r, _ => (suppress cur_path_f cur_path_r) = taxiways
-    | _, _ => False
-    end.
 
-(* sanity check*)
-Example path_follow_atc_eg1 : path_follow_atc  [(((Ch, input), (BC, Ch)),    C);
-                                                (((A3r, input), (AA3, A3r)), A3);
-                                                (((A3r, input), (AA3, A3r)), A3);
-                                                (((A2r, input), (AB, A2r)),  A2);
-                                                (((A2r, input), (AB, A2r)),  A2)]
-                                                [C; A3; A2].
-Proof. reflexivity. Qed.
 
 (* edge_conn AB BC *)
 Definition _edge_conn (e1 : Edge_type) (e2 : Edge_type) : Prop :=
@@ -416,51 +377,114 @@ Proof. intros round_bound. induction round_bound as [| rb  IHrb].
                 {assumption. }
 Qed.
 
-(* CHECK POINT *) 
+
+(* INPUT list Edge_type, the pathway names of it is something like AACCCB *)
+(* OUTPUT list strings, eg ACB *)
+Fixpoint suppress (path : list Edge_type) : list string :=
+    match path with
+    | [] => []
+    | a::b => match b with
+        | []   => [a.2]
+        | c::l => if (a.2 =? c.2) 
+        then (suppress b)
+        else a.2::(suppress b)
+        end 
+    end.
+
+(* Fixpoint suppress (path_f : Edge_type) (path_r : list Edge_type) : list string :=
+    match path_r with
+    | [] => [path_f.2]
+    | path_r_f::path_r_r => 
+        if (path_f.2 =? path_r_f.2) 
+        then (suppress path_r_f path_r_r)
+        else path_f.2::(suppress path_r_f path_r_r)
+    end. *)
 
 
+(* sanity check*)
+Example suppress_eg1 : suppress [(((Ch, input), (BC, Ch)),     C);
+                                 (((Ch, input), (BC, Ch)),    C);
+                                 (((A3r, input), (AA3, A3r)), A3);
+                                 (((A3r, input), (AA3, A3r)), A3);
+                                 (((A2r, input), (AB, A2r)),  A2);
+                                 (((A2r, input), (AB, A2r)),  A2)]
+                       = [C; A3; A2].
+Proof. reflexivity. Qed.
+
+(* no consecutive duplication *)
+Fixpoint no_conn_dup (lst : list string) : Prop :=
+    match lst with
+    | [] => True
+    | f::l => match l with
+        | [] => True
+        | s::r => (f <> s) /\ no_conn_dup l
+        end
+    end.
 
 
+(* path_valid returns true only if one can traverse the path and follow the atc commands.
+   more specifically, it returns true only if:
+   for every step to the next node (Vertex, string) in the path,
+   the associated taxiway exists, and is either the current or the next taxiway. *)
+(* Fixpoint path_follow_atc (path : list Edge_type) (atc : list string) : Prop :=
+    match path, atc with
+    | [], [] => True
+    | path_f::path_r, _ => (suppress path_f path_r) = atc
+    | _, _ => False
+    end. *)
+
+Fixpoint path_follow_atc (path : list Edge_type) (atc : list string) : Prop :=
+    atc = suppress path.
+(* sanity check*)
+Example path_follow_atc_eg1 : path_follow_atc  [(((Ch, input), (BC, Ch)),    C);
+                                                (((A3r, input), (AA3, A3r)), A3);
+                                                (((A3r, input), (AA3, A3r)), A3);
+                                                (((A2r, input), (AB, A2r)),  A2);
+                                                (((A2r, input), (AB, A2r)),  A2)]
+                                                [C; A3; A2].
+Proof. reflexivity. Qed.
+
+(* atc = atc_f::atc_t *)
 Theorem output_path_follow_atc:
-   forall path end_v D round_bound cur_path atc,
-   In path (find_path end_v D round_bound (cur_path, atc)) ->
-   path_conn path.
+    forall path start_v end_v D round_bound atc_f atc_t,
+    In path (find_path end_v D round_bound (([(((start_v, input), (start_v, input)), atc_f)], atc_f), atc_t) ) ->
+    no_conn_dup (atc_f::atc_t) ->
+    path_follow_atc path (atc_f::atc_t).
+(*CHECK POINT *)
 
-   
-   Definition start_correct (start_v : Vertex) (path : list Node_type) : Prop :=
-      match path with
-      | [] => False
-      | f::r => start_v = (fst f)
-      end.
-   
-   Definition end_correct (end_v : Vertex) (path : list Node_type) : Prop :=
-      match rev path with
-      | [] => False
-      | f::r => end_v = (fst f)
-      end.
-   
-   Definition head_is {T : Type} (elem : T)(l : list T) : Prop :=
-      match l with
-      | [] => False
-      | h::r => elem = h
-      end.
-   
-   
-   
-   Definition any_path_in_output_is_valid : Prop := e
-   forall start_v end_v taxiways graph path,
-   In path (find_path_wrapper start_v end_v taxiways graph) ->
-   start_correct start_v path.
-   Check any_path_in_output_is_valid.
-   QuickChick any_path_in_output_is_valid.
-   
-   Theorem any_path_in_output_is_valid:
-   forall start_v end_v taxiways graph path,
-   In path (find_path_wrapper start_v end_v taxiways graph) ->
-   start_correct start_v path /\
-   end_correct start_v path /\
-   path_valid path graph taxiways /\
-   connected path graph.
-   Proof. hammer.
-   Lemma flat_map_conn : forall s prev,
-   sta
+
+
+(* following stuff are defs from an old version *)
+        Definition start_correct (start_v : Vertex) (path : list Node_type) : Prop :=
+            match path with
+            | [] => False
+            | f::r => start_v = (fst f)
+            end.
+        
+        Definition end_correct (end_v : Vertex) (path : list Node_type) : Prop :=
+            match rev path with
+            | [] => False
+            | f::r => end_v = (fst f)
+            end.
+        
+        Definition head_is {T : Type} (elem : T)(l : list T) : Prop :=
+            match l with
+            | [] => False
+            | h::r => elem = h
+            end.
+        
+        
+        
+        Definition any_path_in_output_is_valid : Prop := e
+        forall start_v end_v taxiways graph path,
+        In path (find_path_wrapper start_v end_v taxiways graph) ->
+        start_correct start_v path.
+        
+        Theorem any_path_in_output_is_valid:
+        forall start_v end_v taxiways graph path,
+        In path (find_path_wrapper start_v end_v taxiways graph) ->
+        start_correct start_v path /\
+        end_correct start_v path /\
+        path_valid path graph taxiways /\
+        connected path graph.
+        Proof. 
