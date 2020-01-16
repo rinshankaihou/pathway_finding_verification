@@ -377,6 +377,26 @@ Proof. intros round_bound. induction round_bound as [| rb  IHrb].
                 {assumption. }
 Qed.
 
+(* find_path_conn, but without param 'res' *)
+Lemma find_path_conn_alt:
+    forall round_bound path end_v D s,
+    path_conn s.1.1 ->
+    In path (find_path end_v D round_bound s) ->
+    path_conn (rev path).
+Proof. hammer. Qed.
+
+Theorem output_path_conn:
+    forall path start_v end_v D round_bound atc_f atc_t,
+    In path (find_path end_v D round_bound (([(((start_v, input), (start_v, input)), atc_f)], atc_f), atc_t) ) ->
+    path_conn (rev path).
+Proof. intros path s e D rb atc_f atc_t H. 
+    apply find_path_conn_alt with (round_bound := rb) (end_v := e) (D := D) 
+    (s := (([(((s, input), (s, input)), atc_f)], atc_f), atc_t) ).
+    -hammer.
+    -hammer.
+Qed.
+    
+
 
 (* INPUT list Edge_type, the pathway names of it is something like AACCCB *)
 (* OUTPUT list strings, eg ACB *)
