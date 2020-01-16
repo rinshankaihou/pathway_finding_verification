@@ -1,4 +1,9 @@
-# ALgorithm
+# Dependency
+CoqHammer with at least Vampire and Eprover installed. (Otherwise trust the hammer tactic works at its every occurance)https://github.com/princeton-vl/CoqGym/tree/master/ASTactic/coqhammer
+
+ssreflect : only for computing examples. Safe to delete.
+
+# Algorithm
 The current algorithm is in https://github.com/rinshankaihou/pathway_finding_ver/blob/master/GraphBasics/dfs_complete_paper.v.
 
 
