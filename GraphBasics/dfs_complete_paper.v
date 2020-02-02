@@ -492,17 +492,19 @@ Lemma output_path_follow_atc_stronger_lemma:
     path_follow_atc new_path (atc_f::atc_t).
 Proof.  Admitted.
 
+
+(* focus this*)
 Lemma output_path_follow_atc_stronger_lemma_alt:
     forall (round_bound:nat) end_v D (cur_edges:list Edge_type) (atc_f:string) (atc_t:list string),
     no_conn_dup (atc_f::atc_t) ->
     (forall path, In path (find_path end_v D round_bound ((cur_edges, atc_f), atc_t)) -> 
         path_follow_atc path (atc_f::atc_t)) ->
-    (forall new_path, In new_path (find_path end_v D (round_bound + 1) ((cur_edges, atc_f), atc_t)) ->
+    (forall new_path, In new_path (find_path end_v D (round_bound .+1) ((cur_edges, atc_f), atc_t)) ->
         path_follow_atc new_path (atc_f::atc_t)).
 Proof. intros rb e D cur_edges atc_f atc_t H0 H1.
-intro new_path.  
+intro new_path. Admitted.
 
-(* alternative form *)
+(* alternative form; are they equiv? *)
 Lemma output_path_follow_atc_stronger_alt:
     forall (round_bound:nat) end_v D (cur_edges:list Edge_type) (atc_f:string) (atc_t:list string),
     
@@ -518,10 +520,16 @@ Proof.
 intros rb end_v D cur_edges atc_f atc_t HnoDup H1.
 intro t. induction t as [| t' IH].
 - exact H1.
-- Hint apply output_path_follow_atc_stronger_lemma.   
+- 
+(* apply output_path_follow_atc_stronger_lemma_alt in IH. *)
+  assert (t' .+1 + rb = (t' + rb) .+1) as H2 by hammer. 
+rewrite -> H2. apply output_path_follow_atc_stronger_lemma_alt. 
+    +assumption. 
+    +assumption. 
+Qed.
 
-
-Lemma output_path_follow_atc_stronger:
+(* don't think we need this; looks suspicious as well*)
+(* Lemma output_path_follow_atc_stronger:
     forall t (round_bound:nat) end_v D path (cur_edges:list Edge_type) (atc_f:string) (atc_t:list string) new_path,
     no_conn_dup (atc_f::atc_t) ->
     In path (find_path end_v D round_bound ((cur_edges, atc_f), atc_t)) -> 
@@ -529,8 +537,8 @@ Lemma output_path_follow_atc_stronger:
     In new_path (find_path end_v D (round_bound + t) ((cur_edges, atc_f), atc_t)) -> 
     path_follow_atc new_path (atc_f::atc_t).
 Proof. intro t. induction t as [|t']. 
-- intros rb end_v D path cur_edges atc_f atc_t new_path H1 H2 H3. exact H3.
-- apply output_path_follow_atc_stronger_lemma.
+- intros rb end_v D path cur_edges atc_f atc_t new_path H1 H2 H3. admit.
+- apply output_path_follow_atc_stronger_alt. *)
     
 (* atc = atc_f::atc_t *)
 Theorem output_path_follow_atc:
