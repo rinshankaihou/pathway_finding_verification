@@ -34,3 +34,7 @@ Definitions:
 
 2. If the algorithm is returning a result, there is no other valid result.
 3. If a taxiway is too small for the aircraft, then not part of the result should include this taxiway.
+
+# Notes
+Consider using reflection since our soundness spec sounds very deterministic.
+https://softwarefoundations.cis.upenn.edu/vfa-current/Decide.html
