@@ -10,6 +10,10 @@ Require Import Coq.Lists.List Coq.Bool.Bool.
 
 From Hammer Require Import Hammer.
 
+Module ScratchPad.
+Module ScratchPad2.
+Locate sumbool. (* Coq.Init.Specif.sumbool *)
+Print sumbool.
 
 (*
     Node_type : (Vertex * Vertex)
@@ -104,6 +108,19 @@ Definition eqv (v1 : Vertex) (v2 : Vertex) : bool :=
   index n1, index n2 => beq_nat n1 n2
   end.
 
+Lemma eqv_reflect :
+    forall v1 v2, reflect (v1 = v2) (eqv v1 v2).
+Proof. intros v1 v2. apply iff_reflect. symmetry. destruct v1 as [n1].
+destruct v2 as [n2]. 
+-unfold eqv. split. intros H. hammer.
+-intros H. hammer.
+Qed.
+Print eqv_reflect.
+
+Definition eqv_dec (v1 : Vertex) (v2 : Vertex) : {v1 = v2}+{~(v1 = v2)}.
+destruct (eqv_reflect v1 v2) as [P|Q]. left. apply P. right. apply Q.
+Defined.
+
 Definition edge_filter (current : Node_type) (e : Edge_type) : bool :=
     (eqv current.1 e.1.1.1) && (eqv current.2 e.1.1.2).
 
@@ -139,7 +156,7 @@ Definition if_reach_endpoint (cur_s : State_type) (end_v : Vertex) : bool :=
         else => return []
 
     using flat_map to operate on all edges 
-((start_v, input), (start_v, input))
+((start_v, input), (start_v, input))=? 
 *)
 
 
@@ -179,6 +196,7 @@ Fixpoint find_path (end_v : Vertex) (D : Graph_type) (round_bound : nat) (cur_s 
         else []) ++
         (flat_map (find_path end_v D n) (state_handle cur_s D))
     end.
+
 
 
 Definition find_path_wrapper (start_v : Vertex) (end_v : Vertex) (ATC : list string) (D : Graph_type) : option (list (list Edge_type)) :=
@@ -464,13 +482,66 @@ Example path_follow_atc_eg1 : path_follow_atc  [(((Ch, input), (BC, Ch)),    C);
                                                 [C; A3; A2].
 Proof. reflexivity. Qed.
 
+Print State_type.
+Lemma output_path_follow_atc_stronger_lemma: 
+    forall (round_bound:nat) end_v D path (cur_edges:list Edge_type) (atc_f:string) (atc_t:list string) new_path,
+    no_conn_dup (atc_f::atc_t) ->
+    In path (find_path end_v D round_bound ((cur_edges, atc_f), atc_t)) -> 
+    path_follow_atc path (atc_f::atc_t) ->
+    In new_path (find_path end_v D (round_bound + 1) ((cur_edges, atc_f), atc_t)) -> 
+    path_follow_atc new_path (atc_f::atc_t).
+Proof.  Admitted.
+
+Lemma output_path_follow_atc_stronger_lemma_alt:
+    forall (round_bound:nat) end_v D (cur_edges:list Edge_type) (atc_f:string) (atc_t:list string),
+    no_conn_dup (atc_f::atc_t) ->
+    (forall path, In path (find_path end_v D round_bound ((cur_edges, atc_f), atc_t)) -> 
+        path_follow_atc path (atc_f::atc_t)) ->
+    (forall new_path, In new_path (find_path end_v D (round_bound + 1) ((cur_edges, atc_f), atc_t)) ->
+        path_follow_atc new_path (atc_f::atc_t)).
+Proof. intros rb e D cur_edges atc_f atc_t H0 H1.
+intro new_path.  
+
+(* alternative form *)
+Lemma output_path_follow_atc_stronger_alt:
+    forall (round_bound:nat) end_v D (cur_edges:list Edge_type) (atc_f:string) (atc_t:list string),
+    
+    no_conn_dup (atc_f::atc_t) ->
+    
+    (forall path, (In path (find_path end_v D round_bound ((cur_edges, atc_f), atc_t)) ->
+    path_follow_atc path (atc_f::atc_t))) ->
+    
+    (forall t new_path, (In new_path (find_path end_v D (t + round_bound) ((cur_edges, atc_f), atc_t)) -> 
+    path_follow_atc new_path (atc_f::atc_t))).
+
+Proof.
+intros rb end_v D cur_edges atc_f atc_t HnoDup H1.
+intro t. induction t as [| t' IH].
+- exact H1.
+- Hint apply output_path_follow_atc_stronger_lemma.   
+
+
+Lemma output_path_follow_atc_stronger:
+    forall t (round_bound:nat) end_v D path (cur_edges:list Edge_type) (atc_f:string) (atc_t:list string) new_path,
+    no_conn_dup (atc_f::atc_t) ->
+    In path (find_path end_v D round_bound ((cur_edges, atc_f), atc_t)) -> 
+    path_follow_atc path (atc_f::atc_t) ->
+    In new_path (find_path end_v D (round_bound + t) ((cur_edges, atc_f), atc_t)) -> 
+    path_follow_atc new_path (atc_f::atc_t).
+Proof. intro t. induction t as [|t']. 
+- intros rb end_v D path cur_edges atc_f atc_t new_path H1 H2 H3. exact H3.
+- apply output_path_follow_atc_stronger_lemma.
+    
 (* atc = atc_f::atc_t *)
 Theorem output_path_follow_atc:
-    forall path start_v end_v D round_bound atc_f atc_t,
+    forall round_bound start_v end_v D atc_f atc_t path,
     In path (find_path end_v D round_bound (([(((start_v, input), (start_v, input)), atc_f)], atc_f), atc_t) ) ->
     no_conn_dup (atc_f::atc_t) ->
     path_follow_atc path (atc_f::atc_t).
 (*CHECK POINT *)
+Proof. intro round_bound. induction round_bound as [|rb IH].
+-(*base case*) intros s e D atc_f atc_t path HinPath HnoDup. simpl in HinPath. contradiction.
+-(*inductive rb*)intros s e D atc_f atc_t. unfold find_path.
 
 
 
@@ -480,7 +551,7 @@ Theorem output_path_follow_atc:
             | [] => False
             | f::r => start_v = (fst f)
             end.
-        
+            list string.
         Definition end_correct (end_v : Vertex) (path : list Node_type) : Prop :=
             match rev path with
             | [] => False
