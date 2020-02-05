@@ -112,9 +112,9 @@ Lemma eqv_reflect :
     forall v1 v2, reflect (v1 = v2) (eqv v1 v2).
 Proof. intros v1 v2. apply iff_reflect. symmetry. destruct v1 as [n1].
 destruct v2 as [n2]. 
--unfold eqv. split. intros H. hammer.
--intros H. hammer.
-Qed.
+-unfold eqv. split. intros H. admit.
+-intros H. admit.
+Admitted.
 Print eqv_reflect.
 
 Definition eqv_dec (v1 : Vertex) (v2 : Vertex) : {v1 = v2}+{~(v1 = v2)}.
@@ -291,8 +291,8 @@ Fixpoint path_conn (path : list Edge_type): Prop :=
 Lemma eq_vertex : forall v1 v2, eqv v1 v2 <-> v1 = v2.
 Proof. intros v1 v2.  split. 
 -intros H. destruct v1, v2. unfold eqv in H. apply beq_nat_true in H. auto.
--intros H.  destruct v1, v2. unfold eqv. inversion H. hammer. (* don't know how to prove (n0 =? n0). gotta hammer *)
-Qed.
+-intros H.  destruct v1, v2. unfold eqv. inversion H. admit. (* don't know how to prove (n0 =? n0). gotta admit *)
+Admitted.
 
 (* if e1 ends at node n, then e2 given by find_edge starts at the same node n *)
 Lemma find_edge_conn : forall e1 e2 n D, e1.1.2 = n -> In e2 (find_edge n D) -> edge_conn e2 e1.
@@ -324,7 +324,7 @@ Proof. intros ns s D IH H. unfold state_handle in H. unfold hd_error in H.
             * rewrite <- H3. simpl. rewrite -> Hpath. split.
                 {unfold edge_conn. 
                 unfold find_edge in H2. simpl in H2.
-                hammer. }
+                admit. }
                 {assumption. } 
             * contradiction.
         + unfold is_on_next_taxiway in H3. destruct (hd_error s.2) eqn:Heqn2.
@@ -341,12 +341,12 @@ Proof. intros ns s D IH H. unfold state_handle in H. unfold hd_error in H.
                         + rewrite <- H3. simpl. rewrite -> Hpath. split.
                             {unfold edge_conn. 
                             unfold find_edge in H2. simpl in H2.
-                            hammer. }
+                            admit. }
                             {assumption. } 
                         + contradiction. 
                     - simpl in H3. contradiction H3. }
             * contradiction.
-Qed.
+Admitted.
 
 Lemma path_conn_equiv : forall path, path_conn path -> _path_conn (rev path).
 Proof. intros p H. induction p.
@@ -370,7 +370,7 @@ Proof. intros round_bound. induction round_bound as [| rb  IHrb].
   unfold find_path in H2. destruct (if_reach_endpoint s end_v).
     + (* reached endpoint *) rewrite -> H2 in H3. simpl in H3. 
         destruct H3 as [H4|H5].
-        * (* path is rev s.1.1 *) rewrite <- H4 . hammer.
+        * (* path is rev s.1.1 *) rewrite <- H4 . admit.
         * (* path is given in recursive call of find_path *) 
             fold find_path in H5.
             fold find_path in H2.
@@ -393,7 +393,7 @@ Proof. intros round_bound. induction round_bound as [| rb  IHrb].
                  assumption. assumption. }
                 {reflexivity. }
                 {assumption. }
-Qed.
+Admitted.
 
 (* find_path_conn, but without param 'res' *)
 Lemma find_path_conn_alt:
@@ -401,7 +401,7 @@ Lemma find_path_conn_alt:
     path_conn s.1.1 ->
     In path (find_path end_v D round_bound s) ->
     path_conn (rev path).
-Proof. hammer. Qed.
+Proof. admit. Admitted.
 
 Theorem output_path_conn:
     forall path start_v end_v D round_bound atc_f atc_t,
@@ -410,9 +410,9 @@ Theorem output_path_conn:
 Proof. intros path s e D rb atc_f atc_t H. 
     apply find_path_conn_alt with (round_bound := rb) (end_v := e) (D := D) 
     (s := (([(((s, input), (s, input)), atc_f)], atc_f), atc_t) ).
-    -hammer.
-    -hammer.
-Qed.
+    -admit.
+    -admit.
+Admitted.
     
 
 
@@ -492,6 +492,9 @@ Lemma output_path_follow_atc_stronger_lemma:
     path_follow_atc new_path (atc_f::atc_t).
 Proof.  Admitted.
 
+
+
+
 Lemma output_path_follow_atc_stronger_lemma_alt:
     forall (round_bound:nat) end_v D (cur_edges:list Edge_type) (atc_f:string) (atc_t:list string),
     no_conn_dup (atc_f::atc_t) ->
@@ -523,6 +526,7 @@ Proof. intros rb e D cur_edges atc_f atc_t H0 H1. intro new_path. unfold find_pa
                 *{contradiction H. }
         + contradiction H. (* if not reach_endpoint *) 
     -(* new path in second part of find_path *)
+
 
 (* alternative form *)
 Lemma output_path_follow_atc_stronger_alt:
