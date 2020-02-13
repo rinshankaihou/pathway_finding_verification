@@ -465,7 +465,7 @@ Fixpoint no_conn_dup (lst : list string) : Prop :=
    for every step to the next node (Vertex, string) in the path,
    the associated taxiway exists, and is either the current or the next taxiway. *)
 (* Fixpoint path_follow_atc (path : list Edge_type) (atc : list string) : Prop :=
-    match path, atc with
+    match path, atc withnew_path
     | [], [] => True
     | path_f::path_r, _ => (suppress path_f path_r) = atc
     | _, _ => False
@@ -542,12 +542,26 @@ Proof. intro t. induction t as [|t'].
     
 (* atc = atc_f::atc_t *)
 Theorem output_path_follow_atc:
-    forall round_bound start_v end_v D atc_f atc_t path,
+    forall round_bound start_v end_v D (atc_f:string) (atc_t:list string) path,
     In path (find_path end_v D round_bound (([(((start_v, input), (start_v, input)), atc_f)], atc_f), atc_t) ) ->
     no_conn_dup (atc_f::atc_t) ->
     path_follow_atc path (atc_f::atc_t).
 (*CHECK POINT *)
-Proof. intro round_bound. induction round_bound as [|rb IH].
+Proof. intros rb start_v end_v D atc_f atc_t path.
+
+remember [(((start_v, input), (start_v, input)), atc_f)] as start_edges.
+remember ((start_edges, atc_f), atc_t) as start_state.
+
+assert( forall t new_path, ((In new_path (find_path end_v D (t + rb)  ((start_edges, atc_f), atc_t) )) -> 
+path_follow_atc new_path (atc_f::atc_t)) ) as H.
+{
+    Check output_path_follow_atc_stronger_alt.
+    apply output_path_follow_atc_stronger_alt with (round_bound := rb) (end_v := end_v) (D := D)
+    (cur_edges := start_edges) (atc_f := atc_f) (atc_t := atc_t).
+    - assumption.
+    -. 
+} 
+intro round_bound. induction round_bound as [|rb IH].
 -(*base case*) intros s e D atc_f atc_t path HinPath HnoDup. simpl in HinPath. contradiction.
 -(*inductive rb*)intros s e D atc_f atc_t. unfold find_path.
 
