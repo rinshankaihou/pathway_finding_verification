@@ -16,7 +16,7 @@ Locate sumbool. (* Coq.Init.Specif.sumbool *)
 Print sumbool.
 
 (*
-    Node_type : (Vertex * Vertex)
+    Node_type : (Vertex * Vertex) 
         (current, from)
     taxiway : string
 
@@ -506,7 +506,7 @@ Proof. intros rb e D cur_edges atc_f atc_t H0 H1. intro new_path. unfold find_pa
     destruct (rb+1) eqn:Hrb. 
     - simpl. contradiction.
     - assert (Hrb2 : rb = n) by hammer.
-     (* fix here *) assert (rb + 1 = S rb) by auto. fold find_path. intro H2. apply in_app_iff in H2. destruct H2.
+     (* fix here *) assert (rb + 1 = S rb) by admit. fold find_path. intro H2. apply in_app_iff in H2. destruct H2.
         + (* new path in first part of find_path *)
             destruct (if_reach_endpoint (cur_edges, atc_f, atc_t) e) eqn: H_if_reach_endpoint.
                 * (* if reach_endpoint *) simpl in H. destruct H.
@@ -516,10 +516,16 @@ Proof. intros rb e D cur_edges atc_f atc_t H0 H1. intro new_path. unfold find_pa
 
                         - simpl in H_if_reach_endpoint. apply andb_true_iff in H_if_reach_endpoint.
                           destruct H_if_reach_endpoint. destruct atc_t eqn : H_atc_t_length in H3. 
-                            + (* length atc_t = 0 *)
+                            + (* length atc_t = 0 *) apply H1. rewrite -> H_atc_t_length. 
+                            destruct new_path.
+
+
+
+
+
                                  unfold find_path in H1.
-                                * (* rb = 0 *) simpl in H1. Print find_path. simpl. unfold In.
-                                rewrite -> H_atc_t_length.  
+                                * (* rb = 0 *) simpl in H1. Print find_path. simpl. unfold In in H1. simpl in
+                                rewrite -> H_atc_t_length. unfold path_follow_atc. unfold suppress. simpl. 
                                 * (* rb != 0 *)
                             + (* length atc-t > 0, contradicts to H3 *) discriminate H3.
                     }
