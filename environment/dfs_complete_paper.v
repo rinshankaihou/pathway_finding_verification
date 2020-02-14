@@ -493,45 +493,69 @@ Lemma output_path_follow_atc_stronger_lemma:
 Proof.  Admitted.
 
 
-
+(* Lemma n_1_eq_1_n: forall path,
+ In path (flat_map (find_path e D n) (state_handle (cur_edges, atc_f, atc_t) D)) ->
+ In path (flat_map (find_path e D 1) () *)
 
 Lemma output_path_follow_atc_stronger_lemma_alt:
-    forall (round_bound:nat) end_v D (cur_edges:list Edge_type) (atc_f:string) (atc_t:list string),
+    forall (round_bound:nat) start_v end_v D (atc_f:string) (atc_t:list string),
     no_conn_dup (atc_f::atc_t) ->
-    (forall path, In path (find_path end_v D round_bound ((cur_edges, atc_f), atc_t)) -> 
+    (forall path, In path (find_path 
+                            end_v 
+                            D 
+                            round_bound 
+                            (([(((start_v, input), (start_v, input)), atc_f)], atc_f), atc_t)) -> 
         path_follow_atc path (atc_f::atc_t)) ->
-    (forall new_path, In new_path (find_path end_v D (round_bound + 1) ((cur_edges, atc_f), atc_t)) ->
+    (forall new_path, In new_path (find_path 
+                                    end_v 
+                                    D 
+                                    (round_bound + 1) 
+                                    (([(((start_v, input), (start_v, input)), atc_f)], atc_f), atc_t)) ->
         path_follow_atc new_path (atc_f::atc_t)).
-Proof. intros rb e D cur_edges atc_f atc_t H0 H1. intro new_path. unfold find_path. 
-    destruct (rb+1) eqn:Hrb. 
+Proof. intros rb s e D atc_f atc_t H0 H1. intro new_path. unfold find_path. 
+    remember [(((s, input), (s, input)), atc_f)] as cur_edges.
+    destruct (rb+1) eqn:Hrb.
+   
     - simpl. contradiction.
-    - assert (Hrb2 : rb = n) by hammer.
-     (* fix here *) assert (rb + 1 = S rb) by admit. fold find_path. intro H2. apply in_app_iff in H2. destruct H2.
+    - assert (Hrb2 : rb = n) by admit.
+      assert (rb + 1 = S rb) by admit. fold find_path. intro H2. apply in_app_iff in H2. destruct H2.
         + (* new path in first part of find_path *)
-            destruct (if_reach_endpoint (cur_edges, atc_f, atc_t) e) eqn: H_if_reach_endpoint.
-                * (* if reach_endpoint *) simpl in H. destruct H.
+            destruct (if_reach_endpoint ([(((s, input), (s, input)), atc_f)], atc_f, atc_t) e) eqn: H_if_reach_endpoint.
+            assert (H_reach_endpoint := H_if_reach_endpoint).
+                * (* if reach_endpoint *) simpl in H.  
+                    rewrite -> Heqcur_edges in H2.
+                    rewrite H_reach_endpoint in H2. 
+                    destruct H.
                     {unfold if_reach_endpoint in H_if_reach_endpoint. 
-                     simpl in H_if_reach_endpoint. destruct cur_edges as [| cur_edges_h cur_edges_t].
-                        - simpl in H_if_reach_endpoint. discriminate H_if_reach_endpoint.
-
-                        - simpl in H_if_reach_endpoint. apply andb_true_iff in H_if_reach_endpoint.
-                          destruct H_if_reach_endpoint. destruct atc_t eqn : H_atc_t_length in H3. 
-                            + (* length atc_t = 0 *) apply H1. rewrite -> H_atc_t_length. 
-                            destruct new_path.
-
-
-
-
-
-                                 unfold find_path in H1.
-                                * (* rb = 0 *) simpl in H1. Print find_path. simpl. unfold In in H1. simpl in
-                                rewrite -> H_atc_t_length. unfold path_follow_atc. unfold suppress. simpl. 
-                                * (* rb != 0 *)
-                            + (* length atc-t > 0, contradicts to H3 *) discriminate H3.
+                     simpl in H_if_reach_endpoint. rewrite -> andb_true_iff in H_if_reach_endpoint.
+                     destruct H_if_reach_endpoint as [H_if_reach_endpoint_l H_if_reach_endpoint_r].
+                     simpl in H2. destruct H2.
+                     - (* H2 left *) rewrite <- H. simpl. 
+                        destruct atc_t eqn : H_atc_t_length in H_if_reach_endpoint_r.
+                        + (* length atc_t = 0 *) rewrite -> H_atc_t_length. reflexivity.
+                        + (* length atc_t > 0 *) simpl in H_if_reach_endpoint_r. discriminate H_if_reach_endpoint_r.
+                     - (* H2 right *) contradiction.
                     }
-                *{contradiction H. }
-        + contradiction H. (* if not reach_endpoint *) 
-    -(* new path in second part of find_path *)
+
+                * (* if not reach_endpoint *) rewrite -> Heqcur_edges in H2.
+                    rewrite H_if_reach_endpoint in H2. contradiction. 
+        + (* new path in second part of find_path *)
+        (*can't apply H1 since H1 is n step, we need n+1 step*)
+            apply in_flat_map in H2. destruct H2. destruct H2 as [H2_1 H2_2].  
+            
+            elim H2. intros x Helim. destruct Helim. rewrite <- Hrb2 in H4.
+            unfold state_handle in H3. simpl in H3. destruct cur_edges.
+                * simpl in H3. contradiction.
+                * simpl in H3.     
+            
+
+
+
+
+            apply H1. unfold find_path.  apply in_flat_map in H2. elim H2.
+            intros x Helim. destruct Helim. unfold state_handle in H3. 
+            unfold hd_error in H3. simpl in H3. unfold packer in H3.
+    -
 
 
 (* alternative form *)
