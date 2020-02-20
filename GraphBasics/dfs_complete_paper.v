@@ -181,16 +181,18 @@ Definition state_handle (cur_s : State_type) (D : Graph_type) : list State_type 
     Put the initial edge as: ()
 *)
 
-Fixpoint find_path (end_v : Vertex) (D : Graph_type) (round_bound : nat) (cur_s : State_type) : list (list Edge_type) :=
+Fixpoint find_state (end_v : Vertex) (D : Graph_type) (round_bound : nat) (cur_s : State_type) : list (State_type) :=
     match round_bound with
     | 0 => []
     | S n =>
         (if if_reach_endpoint cur_s end_v  (*reach endpoint*)
-        then [rev cur_s.1.1]
+        then [cur_s]
         else []) ++
-        (flat_map (find_path end_v D n) (state_handle cur_s D))
+        (flat_map (find_state end_v D n) (state_handle cur_s D))
     end.
 
+Definition find_path (end_v : Vertex) (D : Graph_type) (round_bound : nat) (cur_s : State_type) : list (list Edge_type) :=
+    map (fun x => rev (x.1.1)) (find_state end_v D round_bound cur_s).
 
 
 Definition find_path_wrapper (start_v : Vertex) (end_v : Vertex) (ATC : list string) (D : Graph_type) : option (list (list Edge_type)) :=
