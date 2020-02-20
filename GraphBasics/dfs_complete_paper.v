@@ -40,7 +40,7 @@ Inductive Result_type : Type :=
     | SOME_P (result: (list Node_type)).
 (* EXAMPLES *)
 
-Example input := index 0.
+Definition input := index 0.
 (* input should be a node meaningless, but only indicate it's input *)
 
 Example AA3 := index 1.
@@ -351,7 +351,7 @@ Admitted.
 (* if want _path_conn, prove this. current version only uses path_conn *)
 
 (* path in the result given by find_path is connected if current path in state is connected *)
-Lemma find_path_conn:
+(* Lemma find_path_conn:
    forall round_bound path end_v D  s res,
    path_conn s.1.1 ->
    res = (find_path end_v D round_bound s) ->
@@ -408,35 +408,27 @@ Proof. intros path s e D rb atc_f atc_t H.
     (s := (([(((s, input), (s, input)), atc_f)], atc_f), atc_t) ).
     -hammer.
     -hammer.
-Qed.
+Qed. *)
     
 
+(* Start Proving find_path_conn *)
 
+(* extract a path's corresponding atc *)
 (* INPUT list Edge_type, the pathway names of it is something like AACCCB *)
 (* OUTPUT list strings, eg ACB *)
-Fixpoint suppress (path : list Edge_type) : list string :=
+Fixpoint path_coresp_atc (path : list Edge_type) : list string :=
     match path with
     | [] => []
     | a::b => match b with
         | []   => [a.2]
         | c::l => if (a.2 =? c.2) 
-        then (suppress b)
-        else a.2::(suppress b)
+        then (path_coresp_atc b)
+        else a.2::(path_coresp_atc b)
         end 
     end.
 
-(* Fixpoint suppress (path_f : Edge_type) (path_r : list Edge_type) : list string :=
-    match path_r with
-    | [] => [path_f.2]
-    | path_r_f::path_r_r => 
-        if (path_f.2 =? path_r_f.2) 
-        then (suppress path_r_f path_r_r)
-        else path_f.2::(suppress path_r_f path_r_r)
-    end. *)
-
-
 (* sanity check*)
-Example suppress_eg1 : suppress [(((Ch, input), (BC, Ch)),     C);
+Example suppress_eg1 : path_coresp_atc [(((Ch, input), (BC, Ch)),     C);
                                  (((Ch, input), (BC, Ch)),    C);
                                  (((A3r, input), (AA3, A3r)), A3);
                                  (((A3r, input), (AA3, A3r)), A3);
@@ -455,18 +447,9 @@ Fixpoint no_conn_dup (lst : list string) : Prop :=
         end
     end.
 
-
-(* path_valid returns true only if one can traverse the path and follow the atc commands.
-   more specifically, it returns true only if:
-   for every step to the next node (Vertex, string) in the path,as_refng) : Prop :=
-    match path, atc withnew_path
-    | [], [] => True
-    | path_f::path_r, _ => (suppress path_f path_r) = atc
-    | _, _ => False
-    end. *)
-
 Fixpoint path_follow_atc (path : list Edge_type) (atc : list string) : Prop :=
-    atc = suppress path.
+    atc = path_coresp_atc path.
+
 (* sanity check*)
 Example path_follow_atc_eg1 : path_follow_atc  [(((Ch, input), (BC, Ch)),    C);
                                                 (((A3r, input), (AA3, A3r)), A3);
@@ -475,6 +458,22 @@ Example path_follow_atc_eg1 : path_follow_atc  [(((Ch, input), (BC, Ch)),    C);
                                                 (((A2r, input), (AB, A2r)),  A2)]
                                                 [C; A3; A2].
 Proof. reflexivity. Qed.
+
+Definition sublist {T : Type} (l1 : list T) (l2 : list T) : Prop :=
+    exists l, l1 ++ l = l2.
+
+Definition state_partial_follow_atc (s : State_type) (atc : list string) :=
+    sublist (path_coresp_atc s.1.1) atc.
+
+Lemma find_path_follow_atc : forall end_v D rb start_v atc_f atc_t s new_s,
+    ((In s (find_state end_v D rb 
+                      (([(((start_v, input), (start_v, input)), atc_f)], atc_f), atc_t))
+    ) -> (state_partial_follow_atc s (atc_f::atc_t))) 
+    ->
+    ((In new_s (find_state end_v D (S rb) 
+                      (([(((start_v, input), (start_v, input)), atc_f)], atc_f), atc_t))
+    ) -> (state_partial_follow_atc s (atc_f::atc_t))).
+Proof. induction rb.
 
 (* atc = atc_f::atc_t *)
 Theorem output_path_follow_atc:
