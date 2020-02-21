@@ -9,6 +9,8 @@ Require Import Coq.Lists.List Coq.Bool.Bool.
 
 From Hammer Require Import Hammer.
 
+(* For quicker run time, every admit should be hammer!*)
+
 (*
     Node_type : (Vertex * Vertex)
         (current, from)
@@ -181,19 +183,21 @@ Definition state_handle (cur_s : State_type) (D : Graph_type) : list State_type 
     Put the initial edge as: ()
 *)
 
-Fixpoint find_state (end_v : Vertex) (D : Graph_type) (round_bound : nat) (cur_s : State_type) : list (State_type) :=
+
+
+Fixpoint find_path (end_v : Vertex) (D : Graph_type) (round_bound : nat) (cur_s : State_type) : list (list Edge_type) :=
     match round_bound with
     | 0 => []
     | S n =>
         (if if_reach_endpoint cur_s end_v  (*reach endpoint*)
-        then [cur_s]
+        then [rev cur_s.1.1]
         else []) ++
-        (flat_map (find_state end_v D n) (state_handle cur_s D))
-    end.
+        (flat_map (find_path end_v D n) (state_handle cur_s D))
+    end. 
 
-Definition find_path (end_v : Vertex) (D : Graph_type) (round_bound : nat) (cur_s : State_type) : list (list Edge_type) :=
-    map (fun x => rev (x.1.1)) (find_state end_v D round_bound cur_s).
 
+
+ 
 
 Definition find_path_wrapper (start_v : Vertex) (end_v : Vertex) (ATC : list string) (D : Graph_type) : option (list (list Edge_type)) :=
     match ATC with
@@ -249,9 +253,6 @@ Definition node_result_caller (start_v : Vertex) (end_v : Vertex) (ATC : list st
 (* PROOF FOR SOUNDNESS *)
 
 
-
-
-
 (* edge_conn AB BC *)
 Definition _edge_conn (e1 : Edge_type) (e2 : Edge_type) : Prop :=
     e1.1.2 = e2.1.1.
@@ -287,7 +288,7 @@ Fixpoint path_conn (path : list Edge_type): Prop :=
 Lemma eq_vertex : forall v1 v2, eqv v1 v2 <-> v1 = v2.
 Proof. intros v1 v2.  split. 
 -intros H. destruct v1, v2. unfold eqv in H. apply beq_nat_true in H. auto.
--intros H.  destruct v1, v2. unfold eqv. inversion H. hammer. (* don't know how to prove (n0 =? n0). gotta hammer *)
+-intros H.  destruct v1, v2. unfold eqv. inversion H. hammer. (* don't know how to prove (n0 =? n0). gotta admit *)
 Qed.
 
 (* if e1 ends at node n, then e2 given by find_edge starts at the same node n *)
@@ -344,14 +345,16 @@ Proof. intros ns s D IH H. unfold state_handle in H. unfold hd_error in H.
             * contradiction.
 Qed.
 
-Lemma path_conn_equiv : forall path, path_conn path -> _path_conn (rev path).
+
+(* if want _path_conn, prove this. current version only uses path_conn *)
+(* Lemma path_conn_equiv : forall path, path_conn path -> _path_conn (rev path).
 Proof. intros p H. induction p.
 - trivial.
-Admitted.
-(* if want _path_conn, prove this. current version only uses path_conn *)
+Admitted. *)
+
 
 (* path in the result given by find_path is connected if current path in state is connected *)
-(* Lemma find_path_conn:
+ Lemma find_path_conn:
    forall round_bound path end_v D  s res,
    path_conn s.1.1 ->
    res = (find_path end_v D round_bound s) ->
@@ -408,7 +411,7 @@ Proof. intros path s e D rb atc_f atc_t H.
     (s := (([(((s, input), (s, input)), atc_f)], atc_f), atc_t) ).
     -hammer.
     -hammer.
-Qed. *)
+Qed.
     
 
 (* Start Proving find_path_conn *)
@@ -465,15 +468,80 @@ Definition sublist {T : Type} (l1 : list T) (l2 : list T) : Prop :=
 Definition state_partial_follow_atc (s : State_type) (atc : list string) :=
     sublist (path_coresp_atc s.1.1) atc.
 
-Lemma find_path_follow_atc : forall end_v D rb start_v atc_f atc_t s new_s,
+Definition path_partial_follow_atc (p : list Edge_type) (atc : list string):=
+    sublist (path_coresp_atc p) atc.
+
+
+Lemma find_path_follow_atc: forall end_v D rb start_v atc_f atc_t p new_p,
+    ((In p (find_path end_v D rb 
+        (([(((start_v, input), (start_v, input)), atc_f)], atc_f), atc_t)))
+        -> (path_partial_follow_atc p (atc_f::atc_t)))
+    ->     ((In new_p (find_path end_v D (S rb) 
+    (([(((start_v, input), (start_v, input)), atc_f)], atc_f), atc_t)))
+    -> (path_partial_follow_atc new_p (atc_f::atc_t))).
+Proof. intros end_v D rb start_v atc_f atc_t p new_p. set s_init := ([(start_v, input, (start_v, input), atc_f)], atc_f, atc_t). 
+    induction rb. 
+    - simpl. intros. unfold path_partial_follow_atc. unfold path_coresp_atc. 
+        apply in_app_iff in H0. destruct H0. 
+            + destruct (if_reach_endpoint s_init end_v) in H0. 
+                simpl in H0. destruct H0.
+                - rewrite <- H0. simpl. exists atc_t. reflexivity.
+                - contradiction.
+                - simpl in H0. contradiction.  
+            + induction (state_handle s_init D). 
+                * simpl in H0. contradiction. 
+                * apply IHl. apply H0.
+    - 
+
+Admitted.
+     
+
+
+(* An alternative attempt by using state*)
+
+Fixpoint find_state (end_v : Vertex) (D : Graph_type) (round_bound : nat) (cur_s : State_type) : list (State_type) :=
+    match round_bound with
+    | 0 => []
+    | S n =>
+        (if if_reach_endpoint cur_s end_v  (*reach endpoint*)
+        then [cur_s]
+        else []) ++
+        (flat_map (find_state end_v D n) (state_handle cur_s D))
+    end.
+
+Definition find_path_new (end_v : Vertex) (D : Graph_type) (round_bound : nat) (cur_s : State_type) : list (list Edge_type) := 
+    map (fun x => rev (x.1.1)) (find_state end_v D round_bound cur_s).
+
+Lemma two_find_path_equiv: forall end_v D round_bound cur_s, 
+    find_path end_v D round_bound cur_s = find_path_new end_v D round_bound cur_s.
+Proof. (*I think here's no need to induct on rb, but must on map*)
+    intros. induction round_bound.
+        - unfold find_path_new. simpl. reflexivity.
+        - unfold find_path. unfold find_path_new. unfold find_state. destruct (if_reach_endpoint cur_s end_v).
+        simpl. set f := (fun x: list Edge_type*string*list string => rev x.1.1). 
+
+Admitted. 
+
+
+
+Lemma find_state_follow_atc : forall end_v D rb start_v atc_f atc_t s new_s,
     ((In s (find_state end_v D rb 
                       (([(((start_v, input), (start_v, input)), atc_f)], atc_f), atc_t))
     ) -> (state_partial_follow_atc s (atc_f::atc_t))) 
     ->
     ((In new_s (find_state end_v D (S rb) 
                       (([(((start_v, input), (start_v, input)), atc_f)], atc_f), atc_t))
-    ) -> (state_partial_follow_atc s (atc_f::atc_t))).
-Proof. induction rb.
+    ) -> (state_partial_follow_atc new_s (atc_f::atc_t))).
+Proof. induction rb. {
+    - simpl. intros. apply in_app_iff in H0. destruct H0. {
+        + apply in_split in H0. unfold if_reach_endpoint in H0. simpl in H0. 
+            destruct (eqv start_v end_v && eqn (length atc_t) 0) in H0. exists 
+    }
+}  
+
+
+
+
 
 (* atc = atc_f::atc_t *)
 Theorem output_path_follow_atc:
