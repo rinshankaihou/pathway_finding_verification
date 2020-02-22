@@ -7,9 +7,7 @@ From GraphBasics Require Export Vertices.
 Import ListNotations.
 Require Import Coq.Lists.List Coq.Bool.Bool.
 
-From Hammer Require Import Hammer.
-
-(* For quicker run time, every admit should be hammer!*)
+From Hammer Require Import Hammer. (*all hammer is replaced*)
 
 (*
     Node_type : (Vertex * Vertex)
@@ -107,9 +105,15 @@ Lemma eqv_reflect :
     forall v1 v2, reflect (v1 = v2) (eqv v1 v2).
 Proof. intros v1 v2. apply iff_reflect. symmetry. destruct v1 as [n1].
 destruct v2 as [n2]. 
--unfold eqv. split. intros H. admit. (*hammer.*)
--intros H. admit. (*hammer.*)
-Admitted.
+-unfold eqv. split. intros H. apply (Nat.eqb_eq (n1:nat) (n2:nat)) in H. rewrite <- H. reflexivity.
+-intros H. apply (Nat.eqb_eq n1 n2). injection H. auto. (*for dependent type, use injection*)
+Qed.
+
+
+Lemma eqv_true :
+    forall v1 v2, (eqv v1 v2 = true) -> (v1 = v2).
+Proof. intros. unfold eqv in H. destruct v1 as [n1]. destruct v2 as [n2]. 
+    apply (Nat.eqb_eq n1 n2) in H. rewrite H. reflexivity. Qed.
 
 Definition eqv_dec (v1 : Vertex) (v2 : Vertex) : {v1 = v2}+{~(v1 = v2)}.
 destruct (eqv_reflect v1 v2) as [P|Q]. left. apply P. right. apply Q.
@@ -297,7 +301,7 @@ Fixpoint path_conn (path : list Edge_type): Prop :=
 Lemma eq_vertex : forall v1 v2, eqv v1 v2 <-> v1 = v2.
 Proof. intros v1 v2.  split. 
 -intros H. destruct v1, v2. unfold eqv in H. apply beq_nat_true in H. auto.
--intros H.  destruct v1, v2. unfold eqv. inversion H. clear H H1. induction n0. auto. auto. (* hammer *) (* don't know how to prove (n0 =? n0). gotta admit *)
+-intros H.  destruct v1, v2. unfold eqv. inversion H. clear H H1. induction n0. auto. auto.
 Qed.
 
 (* if e1 ends at node n, then e2 given by find_edge starts at the same node n *)
@@ -328,8 +332,12 @@ Proof. intros ns s D IH H. unfold state_handle in H. unfold hd_error in H.
             * rewrite <- H3. simpl. rewrite -> Hpath. split.
                 {unfold edge_conn. 
                 unfold find_edge in H2. simpl in H2. 
-                clear Heqn H3 Hpath IH H.
-                admit. (* hammer *) }
+                clear Heqn H3 Hpath IH H. 
+                apply filter_In in H2. destruct H2 as [H20 H2]. 
+                unfold edge_filter in H2. apply andb_true_iff in H2. destruct H2 as [H21 H22].
+                apply eqv_true in H21. apply eqv_true in H22. 
+                destruct n_edge.1.1. destruct path_hd.1.2. simpl in H21. simpl in H22.
+                rewrite H21. rewrite H22. reflexivity. }
                 {assumption. } 
             * contradiction.
         + unfold is_on_next_taxiway in H3. destruct (hd_error s@3) eqn:Heqn2.
@@ -347,12 +355,16 @@ Proof. intros ns s D IH H. unfold state_handle in H. unfold hd_error in H.
                             {unfold edge_conn. 
                             unfold find_edge in H2. simpl in H2.  
                             clear Heqn H3 Hpath IH H Heqn3 Heqn2 H1.
-                            admit. (* hammer *) }
+                            apply filter_In in H2. destruct H2 as [H20 H2].
+                            unfold edge_filter in H2. apply andb_true_iff in H2. destruct H2 as [H21 H22]. 
+                            apply eqv_true in H21. apply eqv_true in H22. 
+                            destruct n_edge.1.1. destruct path_hd.1.2. simpl in H21. simpl in H22. 
+                            rewrite H21. rewrite H22. reflexivity. }
                             {assumption. } 
                         + contradiction. 
                     - simpl in H3. contradiction H3. }
             * contradiction.
-Admitted.
+Qed.
 
 
 (* if want _path_conn, prove this. current version only uses path_conn *)
@@ -378,7 +390,8 @@ Proof. intros round_bound. induction round_bound as [| rb  IHrb].
   unfold find_path in H2. destruct (if_reach_endpoint s end_v).
     + (* reached endpoint *) rewrite -> H2 in H3. simpl in H3. 
         destruct H3 as [H4|H5].
-        * (* path is rev s.1.1 *) rewrite <- H4. admit. (* hammer *)
+        * (* path is rev s.1.1 *) rewrite <- H4. assert(rev (rev s @1)=s @1). apply rev_involutive.
+        rewrite -> H. apply H1. 
         * (* path is given in recursive call of find_path *) 
             fold find_path in H5.
             fold find_path in H2.
@@ -401,7 +414,7 @@ Proof. intros round_bound. induction round_bound as [| rb  IHrb].
                  assumption. assumption. }
                 {reflexivity. }
                 {assumption. }
-Admitted.
+Qed.
 
 (* find_path_conn, but without param 'res' *)
 Lemma find_path_conn_alt:
@@ -409,7 +422,11 @@ Lemma find_path_conn_alt:
     path_conn s@1 ->
     In path (find_path end_v D round_bound s) ->
     path_conn (rev path).
-Proof. admit. (* hammer *) Admitted.
+Proof. 
+    intros. apply find_path_conn with (end_v:=end_v) (round_bound:=round_bound) (D:=D) (s:=s0) 
+    (res:=(find_path end_v D round_bound s0)).
+    assumption. trivial. assumption.
+Qed.
 
 Theorem output_path_conn:
     forall path start_v end_v D round_bound atc_h atc_t,
