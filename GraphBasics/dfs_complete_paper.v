@@ -474,8 +474,8 @@ C
 []
 [A3; A2]).
 
-Eval compute in (path_coresp_atc  (rev (eg_s@1))).
-Eval compute in  (rev ((eg_s@2) :: (eg_s@4))).
+Example what1 : (path_coresp_atc  (rev (eg_s@1))) = [A2; A3; C]. Proof. reflexivity. Qed.
+Example what2 : (rev ((eg_s@2) :: (eg_s@4))) = [A2; A3; C]. Proof. reflexivity. Qed.
 (* sanity check*)
 Example state_follow_atc_eg1 : state_follow_atc eg_s.
 Proof. unfold state_follow_atc. simpl.  reflexivity. Qed.
