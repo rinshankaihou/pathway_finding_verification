@@ -101,13 +101,7 @@ Definition eqv (v1 : Vertex) (v2 : Vertex) : bool :=
   index n1, index n2 => beq_nat n1 n2
   end.
 
-Lemma eqv_reflect :
-    forall v1 v2, reflect (v1 = v2) (eqv v1 v2).
-Proof. intros v1 v2. apply iff_reflect. symmetry. destruct v1 as [n1].
-destruct v2 as [n2]. 
--unfold eqv. split. intros H. apply (Nat.eqb_eq (n1:nat) (n2:nat)) in H. rewrite <- H. reflexivity.
--intros H. apply (Nat.eqb_eq n1 n2). injection H. auto. (*for dependent type, use injection*)
-Qed.
+
 
 
 Lemma eqv_true :
@@ -115,9 +109,6 @@ Lemma eqv_true :
 Proof. intros. unfold eqv in H. destruct v1 as [n1]. destruct v2 as [n2]. 
     apply (Nat.eqb_eq n1 n2) in H. rewrite H. reflexivity. Qed.
 
-Definition eqv_dec (v1 : Vertex) (v2 : Vertex) : {v1 = v2}+{~(v1 = v2)}.
-destruct (eqv_reflect v1 v2) as [P|Q]. left. apply P. right. apply Q.
-Defined.
 
 Definition edge_filter (current : Node_type) (e : Edge_type) : bool :=
     (eqv current.1 e.1.1.1) && (eqv current.2 e.1.1.2).
@@ -455,6 +446,7 @@ Fixpoint path_coresp_atc (path : list Edge_type) : list string :=
         end 
     end.
 
+
 Fixpoint path_follow_atc (path : list Edge_type) (atc : list string) : Prop :=
     atc = path_coresp_atc path.
 
@@ -468,11 +460,69 @@ Example path_follow_atc_eg1 : path_follow_atc  [(((Ch, input), (BC, Ch)),    C);
 Proof. reflexivity. Qed.
 
 Definition state_follow_atc (state : State_type) : Prop := 
-    (path_coresp_atc state@1) = state@2 :: (rev state@4). 
+    (path_coresp_atc  (rev s@1)) = (rev (state@2 :: state@4)). 
 
-Lemma state_handle_follow : forall s D n_s, 
-    state_follow_atc s -> In n_s (state_handle s D) -> state_follow_atc n_s.
-Admitted.
+Definition eg_s := (State  [(((Ch, input), (BC, Ch)),    C);
+(((A3r, input), (AA3, A3r)), A3);
+(((A3r, input), (AA3, A3r)), A3);
+(((A2r, input), (AB, A2r)),  A2);
+(((A2r, input), (AB, A2r)),  A2)]
+C
+[]
+[A3; A2]).
+
+Eval compute in path_coresp_atc  (rev (eg_s@1)).
+Eval compute in rev (eg_s@2 :: eg_s@4).
+(* sanity check*)
+Example state_follow_atc_eg1 : state_follow_atc  
+    (State  [(((Ch, input), (BC, Ch)),    C);
+            (((A3r, input), (AA3, A3r)), A3);
+            (((A3r, input), (AA3, A3r)), A3);
+            (((A2r, input), (AB, A2r)),  A2);
+            (((A2r, input), (AB, A2r)),  A2)]
+           C
+           []
+           [A3; A2]).
+Proof. unfold state_follow_atc. simpl.  reflexivity. Qed.
+
+Lemma state_handle_follow : forall s D n_s hd tl, 
+    (s @1 = hd::tl) -> (* cur_path is hd::tl *)
+    (s @2 = hd.2) -> (* head of cur_path on atc_t, current atc *)
+    state_follow_atc s -> 
+    In n_s (state_handle s D) -> 
+    state_follow_atc n_s.
+Proof. intros s D n_s hd tl Hpath Hhd H1 H2.
+
+unfold state_handle in H2.
+unfold state_follow_atc.
+rewrite -> Hpath in H2.
+simpl.
+apply in_flat_map in H2. destruct H2. destruct H as [H2 H3].
+unfold packer in H3. destruct (is_on_this_taxiway s x) eqn: H_on_this_taxi.
++ (* on_this_taxiway *)  
+    simpl in H3. destruct H3.
+    * unfold state_follow_atc in H1.
+        assert (H4: n_s @2 = s @2). rewrite <- H. reflexivity.
+        assert (H5: n_s @4 = s @4). rewrite <- H. reflexivity.
+        rewrite -> H4. rewrite -> H5.
+        assert(rev (s @2 :: s @4) = rev s @4 ++ [s @2]) by auto. rewrite <- H1. reflexivity.
+    * contradiction.
++ destruct (is_on_next_taxiway s x) eqn: H_on_next_taxi.
+    - (* on_next_taxiway *) 
+    simpl in H3. simpl. destruct H3 as [H3l | H3r].
+    * simpl. unfold state_follow_atc in H1. rewrite <- H3l. simpl.  
+        assert (H3 : ((x.2 =? hd.2) = false) ). {
+            unfold is_on_next_taxiway in H_on_next_taxi.
+            destruct (s @3) as [| atc_t_h atc_t_t].
+            + discriminate H_on_next_taxi.
+            + unfold is_on_this_taxiway in H_on_this_taxi. rewrite -> Hhd in H_on_this_taxi.
+                rewrite String.eqb_sym in H_on_this_taxi. assumption.
+        }
+        rewrite -> H3. rewrite Hpath in H1. rewrite H1. 
+        clear H1 H3 H H_on_this_taxi H_on_next_taxi H2 Hhd Hpath.
+        rewrite <- rev_unit. reflexivity.
+    * contradiction.
+* contradiction.
 
 Definition origin_atc (s : State_type) := (rev s@4) ++ [s@2] ++ s@3.
 
@@ -480,7 +530,8 @@ Lemma find_path_follow_atc: forall end_v D rb s path,
     state_follow_atc s ->
     In path (find_path end_v D rb s)->
     path_follow_atc path (origin_atc s).
-Admitted.
+Proof. intros end_v D rb s path H_s_follow H1.
+
 
 (* no consecutive duplication *)
 Fixpoint no_conn_dup (lst : list string) : Prop :=
