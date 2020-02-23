@@ -463,7 +463,7 @@ Example path_follow_atc_eg1 : path_follow_atc  [(((Ch, input), (BC, Ch)),    C);
 Proof. reflexivity. Qed.
 
 Definition state_follow_atc (state : State_type) : Prop := 
-    (path_coresp_atc  (rev (s@1))) = (rev ((state@2) :: (state@4))). 
+    (path_coresp_atc  (rev (state@1))) = (rev ((state@2) :: (state@4))). 
 
 Definition eg_s := (State  [(((Ch, input), (BC, Ch)),    C);
 (((A3r, input), (AA3, A3r)), A3);
@@ -473,12 +473,9 @@ Definition eg_s := (State  [(((Ch, input), (BC, Ch)),    C);
 C
 []
 [A3; A2]).
-
-Example what1 : (path_coresp_atc  (rev (eg_s@1))) = [A2; A3; C]. Proof. reflexivity. Qed.
-Example what2 : (rev ((eg_s@2) :: (eg_s@4))) = [A2; A3; C]. Proof. reflexivity. Qed.
 (* sanity check*)
 Example state_follow_atc_eg1 : state_follow_atc eg_s.
-Proof. unfold state_follow_atc. simpl.  reflexivity. Qed.
+Proof. unfold state_follow_atc. reflexivity. Qed.
 
 Lemma state_handle_follow : forall s D n_s hd tl, 
     (s @1 = hd::tl) -> (* cur_path is hd::tl *)
@@ -500,7 +497,9 @@ unfold packer in H3. destruct (is_on_this_taxiway s x) eqn: H_on_this_taxi.
         assert (H4: n_s @2 = s @2). rewrite <- H. reflexivity.
         assert (H5: n_s @4 = s @4). rewrite <- H. reflexivity.
         rewrite -> H4. rewrite -> H5.
-        assert(rev (s @2 :: s @4) = rev s @4 ++ [s @2]) by auto. rewrite <- H1. reflexivity.
+        assert(rev (s @2 :: s @4) = rev s @4 ++ [s @2]) by auto. 
+        rewrite <- H0. rewrite <- H. rewrite -> Hpath. simpl.
+        unfoldpath  reflexivity.
     * contradiction.
 + destruct (is_on_next_taxiway s x) eqn: H_on_next_taxi.
     - (* on_next_taxiway *) 
