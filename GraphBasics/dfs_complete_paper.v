@@ -449,9 +449,24 @@ Fixpoint path_coresp_atc (path : list Edge_type) : list string :=
         end 
     end.
 
+Lemma path_follow_atc_rev_comm : forall path, 
+    path_coresp_atc (rev path) = rev (path_coresp_atc path).
+Proof. Admitted.
+
+(* no consecutive duplication *)
+Fixpoint no_conn_dup (lst : list string) : Prop :=
+    match lst with
+    | [] => True
+    | f::l => match l with
+        | [] => True
+        | s::r => (f <> s) /\ no_conn_dup l
+        end
+    end.
 
 Fixpoint path_follow_atc (path : list Edge_type) (atc : list string) : Prop :=
     atc = path_coresp_atc path.
+
+
 
 (* sanity check*)
 Example path_follow_atc_eg1 : path_follow_atc  [(((Ch, input), (BC, Ch)),    C);
@@ -477,12 +492,16 @@ C
 Example state_follow_atc_eg1 : state_follow_atc eg_s.
 Proof. unfold state_follow_atc. reflexivity. Qed.
 
-Lemma state_handle_follow : forall s D n_s hd tl, 
+Lemma rev_inversion : forall {T : Type} (l1 l2 : list T), rev l1 = rev l2 -> l1 = l2.
+Proof. intros T l1. induction l1.
+Admitted.
+
+Lemma state_handle_follow : forall s D n_s hd tl, (* s is cur_state *)
     (s @1 = hd::tl) -> (* cur_path is hd::tl *)
     (s @2 = hd.2) -> (* head of cur_path on atc_t, current atc *)
-    state_follow_atc s -> 
-    In n_s (state_handle s D) -> 
-    state_follow_atc n_s.
+    state_follow_atc s ->  (* prev state follow atc *)
+    In n_s (state_handle s D) -> (* n_s is a new_state *)
+    state_follow_atc n_s. (* then n_s follow atc *)
 Proof. intros s D n_s hd tl Hpath Hhd H1 H2.
 
 unfold state_handle in H2.
@@ -493,17 +512,29 @@ apply in_flat_map in H2. destruct H2. destruct H as [H2 H3].
 unfold packer in H3. destruct (is_on_this_taxiway s x) eqn: H_on_this_taxi.
 + (* on_this_taxiway *)  
     simpl in H3. destruct H3.
-    * unfold state_follow_atc in H1.
-        assert (H4: n_s @2 = s @2). rewrite <- H. reflexivity.
-        assert (H5: n_s @4 = s @4). rewrite <- H. reflexivity.
-        rewrite -> H4. rewrite -> H5.
-        assert(rev (s @2 :: s @4) = rev s @4 ++ [s @2]) by auto. 
-        rewrite <- H0. rewrite <- H. rewrite -> Hpath. simpl.
-        unfoldpath  reflexivity.
+    * unfold state_follow_atc in H1. 
+    rewrite -> path_follow_atc_rev_comm.
+    rewrite -> path_follow_atc_rev_comm in H1.
+    apply rev_inversion in H1.
+    rewrite <- H. simpl. rewrite -> Hpath. 
+    assert(H4: rev s @4 ++ [s @2] = rev ((s @2)::(s @4))) by auto.
+    rewrite -> H4. 
+    assert (H_goal: (if x.2 =? hd.2
+                    then path_coresp_atc (hd :: tl)
+                    else (x.2 :: path_coresp_atc (hd :: tl))%SEQ)
+                    = (s @2 :: s @4)).
+    {rewrite <- H1. rewrite -> Hpath. 
+        assert (Htemp: x.2 =? hd.2). {
+            unfold is_on_this_taxiway in H_on_this_taxi.
+            rewrite -> Hhd in H_on_this_taxi. rewrite -> String.eqb_sym. exact H_on_this_taxi.
+        }
+        rewrite -> Htemp. reflexivity.
+    }
+    rewrite H_goal. reflexivity.
     * contradiction.
 + destruct (is_on_next_taxiway s x) eqn: H_on_next_taxi.
     - (* on_next_taxiway *) 
-    simpl in H3. simpl. destruct H3 as [H3l | H3r].
+    simpl in H3. destruct H3 as [H3l | H3r].
     * simpl. unfold state_follow_atc in H1. rewrite <- H3l. simpl.  
         assert (H3 : ((x.2 =? hd.2) = false) ). {
             unfold is_on_next_taxiway in H_on_next_taxi.
@@ -512,11 +543,28 @@ unfold packer in H3. destruct (is_on_this_taxiway s x) eqn: H_on_this_taxi.
             + unfold is_on_this_taxiway in H_on_this_taxi. rewrite -> Hhd in H_on_this_taxi.
                 rewrite String.eqb_sym in H_on_this_taxi. assumption.
         }
-        rewrite -> H3. rewrite Hpath in H1. rewrite H1. 
-        clear H1 H3 H H_on_this_taxi H_on_next_taxi H2 Hhd Hpath.
-        rewrite <- rev_unit. reflexivity.
-    * contradiction.
+        assert(H4: rev s @1 ++ [x] = rev (x::s @1)) by auto.
+        rewrite -> H4. 
+        rewrite -> path_follow_atc_rev_comm.
+        rewrite -> path_follow_atc_rev_comm in H1.
+        apply rev_inversion in H1.
+        assert(H5: (rev s @4 ++ [s @2]) ++ [x.2] = rev ([:: x.2, s @2 & (s @4)])) by auto.
+        rewrite -> H5. clear H5.
+        assert (H_goal: path_coresp_atc (x :: s @1)
+                        = [:: x.2, s @2 & s @4]).
+        {
+            rewrite <- H1. rewrite -> Hpath.
+            unfold path_coresp_atc. 
+            assert (Htemp: (x.2 =? hd.2) = false). {
+                unfold is_on_this_taxiway in H_on_this_taxi.
+                rewrite -> Hhd in H_on_this_taxi. rewrite -> String.eqb_sym. exact H_on_this_taxi.
+            }
+            rewrite -> Htemp. reflexivity.
+        }
+        rewrite H_goal. reflexivity.
+        * contradiction.
 * contradiction.
+Qed.
 
 Definition origin_atc (s : State_type) := (rev s@4) ++ [s@2] ++ s@3.
 
@@ -526,16 +574,6 @@ Lemma find_path_follow_atc: forall end_v D rb s path,
     path_follow_atc path (origin_atc s).
 Proof. intros end_v D rb s path H_s_follow H1.
 
-
-(* no consecutive duplication *)
-Fixpoint no_conn_dup (lst : list string) : Prop :=
-    match lst with
-    | [] => True
-    | f::l => match l with
-        | [] => True
-        | s::r => (f <> s) /\ no_conn_dup l
-        end
-    end.
 
 (* atc = atc_f::atc_t *)
 Theorem output_path_follow_atc:
