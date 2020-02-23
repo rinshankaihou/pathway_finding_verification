@@ -129,7 +129,10 @@ Notation "S @1" := (s_1 S) (at level 1, no associativity).
 Notation "S @2" := (s_2 S) (at level 1, no associativity).
 Notation "S @3" := (s_3 S) (at level 1, no associativity).
 Notation "S @4" := (s_4 S) (at level 1, no associativity).
-
+Lemma s_notation_sound : forall (s : State_type),
+    s = State s@1 s@2 s@3 s@4.
+Proof. intro s. destruct s as [s1 s2 s3 s4] eqn:H. reflexivity. Qed.
+    
 Eval compute in  (s@1, s@2, s@3, s@4).
 (* ============ helper functions ============*)
 
