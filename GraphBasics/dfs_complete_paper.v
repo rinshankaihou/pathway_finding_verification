@@ -568,11 +568,45 @@ Qed.
 
 Definition origin_atc (s : State_type) := (rev s@4) ++ [s@2] ++ s@3.
 
-Lemma find_path_follow_atc: forall end_v D rb s path,
+Lemma find_path_follow_atc: forall rb end_v D s path,
+    s @1 <> [] ->
     state_follow_atc s ->
     In path (find_path end_v D rb s)->
     path_follow_atc path (origin_atc s).
-Proof. intros end_v D rb s path H_s_follow H1.
+Proof. intro rb. induction rb as [| rb'] eqn: Hrb.
+- intros end_v D s path H_path_not_empty H_s_follow H1.
+simpl in H1. contradiction.
+- intros end_v D s path H_path_not_empty H_s_follow H1.
+    unfold find_path in H1.
+    destruct (if_reach_endpoint s end_v) eqn: H_reach_end.
+    + (* reach endpoint *) simpl in H1.
+        destruct H1 as [H1l | H1r].
+        * (* path from second half of find_path *) 
+            assert(H_atc_t_emtpy : s @3 = []). {
+                unfold if_reach_endpoint in H_reach_end.
+                destruct (s @1) as [| cur_hd cur_tl].
+                - contradiction.
+                - simpl in H_reach_end. apply andb_true_iff in H_reach_end.
+                    destruct H_reach_end. destruct (s @3) as [| s3]. 
+                    * reflexivity. 
+                    * simpl in H0. discriminate H0.
+            }
+                
+             destruct path as [| p_hd p_tl] eqn: Hpath.
+            - assert(H_rev_s_1: rev (rev s@1) = rev []). {rewrite -> H1l; reflexivity. }
+                simpl in H_rev_s_1. rewrite -> rev_involutive in H_rev_s_1.
+                rewrite -> H_rev_s_1 in H_path_not_empty. contradiction.
+            -  unfold state_follow_atc in H_s_follow. rewrite -> H1l in H_s_follow.
+            unfold path_follow_atc. unfold state_follow_atc. rewrite -> H_s_follow.
+            unfold origin_atc. rewrite -> H_atc_t_emtpy.
+            reflexivity.
+
+        * (* path from second half of find_path *) 
+            apply in_flat_map in H1r. destruct H1r as [n_s H1r]. destruct H1r as [H1r1 H1r2].
+            fold find_path in H1r2.
+            assert(H_n_s_follow: state_follow_atc n_s). {
+                apply state_handle_follow with (s:=s) (D:=D) (n_s := n_s) (hd:=hd) (tl:=tl) .
+            }
 
 
 (* atc = atc_f::atc_t *)
