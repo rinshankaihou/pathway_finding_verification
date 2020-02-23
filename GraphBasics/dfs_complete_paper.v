@@ -460,7 +460,7 @@ Example path_follow_atc_eg1 : path_follow_atc  [(((Ch, input), (BC, Ch)),    C);
 Proof. reflexivity. Qed.
 
 Definition state_follow_atc (state : State_type) : Prop := 
-    (path_coresp_atc  (rev s@1)) = (rev (state@2 :: state@4)). 
+    (path_coresp_atc  (rev (s@1))) = (rev ((state@2) :: (state@4))). 
 
 Definition eg_s := (State  [(((Ch, input), (BC, Ch)),    C);
 (((A3r, input), (AA3, A3r)), A3);
@@ -471,18 +471,10 @@ C
 []
 [A3; A2]).
 
-Eval compute in path_coresp_atc  (rev (eg_s@1)).
-Eval compute in rev (eg_s@2 :: eg_s@4).
+Eval compute in (path_coresp_atc  (rev (eg_s@1))).
+Eval compute in  (rev ((eg_s@2) :: (eg_s@4))).
 (* sanity check*)
-Example state_follow_atc_eg1 : state_follow_atc  
-    (State  [(((Ch, input), (BC, Ch)),    C);
-            (((A3r, input), (AA3, A3r)), A3);
-            (((A3r, input), (AA3, A3r)), A3);
-            (((A2r, input), (AB, A2r)),  A2);
-            (((A2r, input), (AB, A2r)),  A2)]
-           C
-           []
-           [A3; A2]).
+Example state_follow_atc_eg1 : state_follow_atc eg_s.
 Proof. unfold state_follow_atc. simpl.  reflexivity. Qed.
 
 Lemma state_handle_follow : forall s D n_s hd tl, 
