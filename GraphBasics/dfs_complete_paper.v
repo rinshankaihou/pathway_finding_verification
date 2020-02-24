@@ -457,7 +457,14 @@ Fixpoint path_coresp_atc (path : list Edge_type) : list string :=
 (* path_coresp_atc and rev are commutative *)
 Lemma path_follow_atc_rev_comm : forall path, 
     path_coresp_atc (rev path) = rev (path_coresp_atc path).
-Proof. Admitted. 
+Proof. intro path. induction path as [| hd tl IH].
+- reflexivity.
+simpl.
+- destruct tl as [|tl_hd tl_tl] eqn: Htl.
+    + reflexivity.
+    + (* hd::tl_hd::tl_tl = a::c::l, b = c::l *) 
+        destruct (hd.2 =? tl_hd.2) eqn: Htl_hd.
+        rewrite <- IH.
 
 (* no consecutive duplicationl; not being used for now *)
 Fixpoint no_conn_dup (lst : list string) : Prop :=
