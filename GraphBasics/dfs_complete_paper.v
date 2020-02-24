@@ -2,10 +2,10 @@ Require Import Coq.Strings.String.
 Open Scope string_scope.
 
 From mathcomp Require Import all_ssreflect.
-Require Import Coq.Lists.List.
+(* Require Import Coq.Lists.List. *)
 From GraphBasics Require Export Vertices.
 Import ListNotations.
-Require Import Coq.Lists.List Coq.Bool.Bool.
+Require Import Coq.Bool.Bool.
 
 From Hammer Require Import Hammer. (*all hammer is replaced*)
 
@@ -455,16 +455,112 @@ Fixpoint path_coresp_atc (path : list Edge_type) : list string :=
     end.
 
 (* path_coresp_atc and rev are commutative *)
+Lemma coresp_atc_unit : forall path, path_coresp_atc path = [] -> path = [].
+Proof.
+    intros. induction path. 
+    - reflexivity.
+    - simpl in H. destruct path.
+        + discriminate.
+        + destruct (a.2=?e.2).
+            * apply IHpath in H. discriminate.
+            * discriminate.
+Qed. 
+
+Lemma path_coresp_atc_lemma1 : forall (l : seq.seq Edge_type) (b a : Edge_type),
+    (b.2 =? a.2) ->
+    path_coresp_atc ((l ++ [b]) ++ [a]) = 
+    path_coresp_atc (l ++ [b]).
+Proof. intro l. induction l as [|hd tl IH].
+- intros b a H. simpl. rewrite -> H. apply String.eqb_eq in H. rewrite H. reflexivity.
+- intros b a H. apply String.eqb_eq in H as H2.
+assert (H3: path_coresp_atc ((tl ++ [b]) ++ [a])%SEQ = path_coresp_atc (tl ++ [b])%SEQ).
+{apply IH. assumption. }
+destruct (tl ++ [b])%SEQ as [|e1 l1] eqn: Hs1.
+{assert(Hcontra: [] <> ((tl ++ [b])%SEQ) ). apply app_cons_not_nil. 
+    rewrite -> Hs1 in Hcontra. contradiction. }
+destruct ((tl ++ [b]) ++ [a])%SEQ as [|e2 l2] eqn: Hs2.
+{assert(Hcontra: [] <> ((tl ++ [b]) ++ [a])%SEQ ). apply app_cons_not_nil. 
+    rewrite -> Hs2 in Hcontra. contradiction. }
+simpl. rewrite -> Hs2. rewrite -> Hs1.
+rewrite -> Hs1 in Hs2. rewrite <- app_comm_cons in Hs2. inversion Hs2.
+destruct (hd.2 =? e2.2). 
+- rewrite -> app_comm_cons. rewrite <- H1. rewrite <- Hs1.
+    apply IH. assumption.
+- rewrite -> app_comm_cons. rewrite <- H1. rewrite <- Hs1.
+
+assert(Hgoal: (path_coresp_atc ((tl ++ [b])%SEQ ++ [a])%list
+              = path_coresp_atc (tl ++ [b]))).
+{apply IH. assumption. }
+rewrite -> Hgoal. reflexivity.
+Qed.
+
+Lemma path_coresp_atc_lemma2 : forall (l : seq.seq Edge_type) (b a : Edge_type),
+    (b.2 =? a.2) = false ->
+    path_coresp_atc ((l ++ [b]) ++ [a]) = 
+    (path_coresp_atc (l ++ [b])) ++ [a.2].
+Proof. intro l. induction l as [|hd tl IH].
+- intros b a H. simpl. rewrite -> H. reflexivity.
+- intros b a H. apply String.eqb_neq in H as H2. simpl. 
+assert (H3: path_coresp_atc ((tl ++ [b]) ++ [a])%SEQ  = 
+            ((path_coresp_atc (tl ++ [b])) ++ [a.2])%SEQ ).
+{apply IH. assumption. }
+destruct ((tl ++ [b]) ++ [a])%SEQ as [|e2 l2] eqn: Hs2.
+{assert(Hcontra: [] <> ((tl ++ [b]) ++ [a])%SEQ ). apply app_cons_not_nil. 
+    rewrite -> Hs2 in Hcontra. contradiction. }
+destruct (tl ++ [b])%SEQ as [|e1 l1] eqn: Hs1.
+{assert(Hcontra: [] <> (tl ++ [b])%SEQ ). apply app_cons_not_nil. 
+    rewrite -> Hs1 in Hcontra. contradiction. }
+
+simpl. 
+rewrite <- app_comm_cons in Hs2. inversion Hs2.
+rewrite <- H1.
+destruct (hd.2 =? e1.2) eqn: H5. 
+- destruct l1 as [| l1h l1t] eqn: H6.
+    + simpl. hammer.
+    + simpl. hammer.
+- simpl.
+assert(Hgoal: (match (l1 ++ [a])%list with
+                | [] => [e1.2]
+                | c :: _ =>
+                    if e1.2 =? c.2
+                    then path_coresp_atc (l1 ++ [a])%list
+                    else e1.2 :: path_coresp_atc (l1 ++ [a])%list
+                end)
+                = ((match l1 with
+                | [] => [e1.2]
+                | (c :: _)%SEQ =>
+                    if e1.2 =? c.2
+                    then path_coresp_atc l1
+                    else (e1.2 :: path_coresp_atc l1)%SEQ
+                end ++ [a.2]))).
+{destruct l1 as [| l1h l1t] eqn: H6. 
+    - simpl. hammer.
+    - simpl. hammer. }
+rewrite -> Hgoal. reflexivity.
+Qed.
+
 Lemma path_follow_atc_rev_comm : forall path, 
-    path_coresp_atc (rev path) = rev (path_coresp_atc path).
-Proof. intro path. induction path as [| hd tl IH].
-- reflexivity.
-simpl.
-- destruct tl as [|tl_hd tl_tl] eqn: Htl.
-    + reflexivity.
-    + (* hd::tl_hd::tl_tl = a::c::l, b = c::l *) 
-        destruct (hd.2 =? tl_hd.2) eqn: Htl_hd.
-        rewrite <- IH.
+path_coresp_atc (rev path) = rev (path_coresp_atc path).
+Proof. 
+assert (Rev_lemma: forall {T} (l1 l2 : list T), rev l1 = l2 <-> l1 = rev l2).
+{ intros T l1 l2. split. 
+- intro H. rewrite <- H. rewrite -> rev_involutive. reflexivity. 
+- intro H. rewrite -> H. rewrite -> rev_involutive. reflexivity. }
+
+intro path. induction path as [| a tl IH].
+(* base case *) { reflexivity. }
+destruct tl as [|b l] eqn: Hb.
+{reflexivity. }
+(* now, path = a::b::l, rev path = ra::rb::rl *)
+Ltac refl H H':= apply String.eqb_eq in H as H'.
+destruct (a.2 =? b.2) eqn: Hab. refl Hab Hab'.
+    - (* a.2 =? b.2 *)
+    simpl. rewrite -> Hab. simpl in IH. simpl. rewrite <- IH.
+    apply path_coresp_atc_lemma1. apply String.eqb_eq. symmetry. assumption.
+    - (* (a.2 =? b.2) = false *)
+    simpl. rewrite -> Hab. simpl in IH. simpl. rewrite <- IH.
+    apply path_coresp_atc_lemma2. rewrite -> String.eqb_sym.  assumption.
+Qed.
 
 (* no consecutive duplicationl; not being used for now *)
 Fixpoint no_conn_dup (lst : list string) : Prop :=
@@ -729,38 +825,3 @@ apply find_path_follow_atc with (end_v := end_v) (D := D)
 - unfold state_follow_atc. simpl. reflexivity.
 - auto.
 Qed.
-
-(* following stuff are defs from an old version *)
-        Definition start_correct (start_v : Vertex) (path : list Node_type) : Prop :=
-            match path with
-            | [] => False
-            | f::r => start_v = (fst f)
-            end.
-            list string.
-        Definition end_correct (end_v : Vertex) (path : list Node_type) : Prop :=
-            match rev path with
-            | [] => False
-            | f::r => end_v = (fst f)
-            end.
-        
-        Definition head_is {T : Type} (elem : T)(l : list T) : Prop :=
-            match l with
-            | [] => False
-            | h::r => elem = h
-            end.
-        
-        
-        
-        Definition any_path_in_output_is_valid : Prop := e
-        forall start_v end_v taxiways graph path,
-        In path (find_path_wrapper start_v end_v taxiways graph) ->
-        start_correct start_v path.
-        
-        Theorem any_path_in_output_is_valid:
-        forall start_v end_v taxiways graph path,
-        In path (find_path_wrapper start_v end_v taxiways graph) ->
-        start_correct start_v path /\
-        end_correct start_v path /\
-        path_valid path graph taxiways /\
-        connected path graph.
-        Proof. 
