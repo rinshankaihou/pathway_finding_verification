@@ -698,15 +698,18 @@ Theorem output_path_follow_atc:
     no_conn_dup (atc_h::atc_t) ->
     path_follow_atc path (atc_h::atc_t).
 (*CHECK POINT *)
-Proof. intros rb start_v end_v D atc_f atc_t path.
-
-remember [(((start_v, input), (start_v, input)), atc_f)] as start_edges.
-remember ((start_edges, atc_f), atc_t) as start_state.
-
-assert( forall t new_path, ((In new_path (find_path end_v D (t + rb)  ((start_edges, atc_f), atc_t) )) -> 
-path_follow_atc new_path (atc_f::atc_t)) ) as H.
-Abort.
-
+Proof. intros rb start_v end_v D atc_h atc_t path H_path H_no_dup.
+assert (H_atc_same: origin_atc (State [(((start_v, input), (start_v, input)), atc_h)] atc_h atc_t []) 
+                    = atc_h::atc_t) by auto.
+rewrite <- H_atc_same.
+apply find_path_follow_atc with (end_v := end_v) (D := D) 
+                                (hd := (((start_v, input), (start_v, input)), atc_h)) 
+                                (tl := []) (rb := rb).
+- auto.
+- auto.
+- unfold state_follow_atc. simpl. reflexivity.
+- auto.
+Qed.
 
 (* following stuff are defs from an old version *)
         Definition start_correct (start_v : Vertex) (path : list Node_type) : Prop :=
