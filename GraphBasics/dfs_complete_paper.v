@@ -189,26 +189,6 @@ Definition state_handle (cur_s : State_type) (D : Graph_type) : list State_type 
     | Some e => flat_map (packer cur_s) (find_edge e.1.2 D)
     end.
 
-Lemma state_handle_preserve_atc_h_if_reach_end : forall s D end_v n_s, 
-    if_reach_endpoint s end_v -> In n_s (state_handle s D) -> n_s @2 = s @2.
-Proof. intros s D end_v n_s H1. unfold state_handle.
-    unfold if_reach_endpoint in H1. destruct (s @1) as [| hd tl] eqn: H2.
-    - simpl. intro Hfalse. contradiction. 
-    - simpl. intro H3. apply in_flat_map in H3.
-        destruct H3 as [e H3]. destruct H3 as [H3 H4].
-        simpl in H1.
-        apply andb_true_iff in H1. destruct H1.
-        unfold packer in H4. destruct (is_on_this_taxiway s e).
-        - simpl in H4. destruct H4.
-            + rewrite <- H1.  auto.
-            + contradiction.
-        - destruct  (is_on_next_taxiway s e).
-            * simpl in H4. destruct H4.
-                { rewrite <- H1.  simpl. give_up.  }
-                { contradiction. }
-            * contradiction.
-
-Abort. (* this is wrong *)
 
 (* ================= main function ===============*)
 (* we return list list edges as results, it can be map to other type*)
@@ -442,7 +422,7 @@ Lemma find_path_conn_alt:
     In path (find_path end_v D round_bound s) ->
     path_conn (rev path).
 Proof. 
-    intros. apply find_path_conn with (end_v:=end_v) (round_bound:=round_bound) (D:=D) (s:=s0) 
+    intros round_bound path end_v D s0 H1 H2. apply find_path_conn with (end_v:=end_v) (round_bound:=round_bound) (D:=D) (s:=s0) 
     (res:=(find_path end_v D round_bound s0)).
     assumption. trivial. assumption.
 Qed.
@@ -477,9 +457,9 @@ Fixpoint path_coresp_atc (path : list Edge_type) : list string :=
 (* path_coresp_atc and rev are commutative *)
 Lemma path_follow_atc_rev_comm : forall path, 
     path_coresp_atc (rev path) = rev (path_coresp_atc path).
-Proof. Admitted.
+Proof. Admitted. 
 
-(* no consecutive duplication *)
+(* no consecutive duplicationl; not being used for now *)
 Fixpoint no_conn_dup (lst : list string) : Prop :=
     match lst with
     | [] => True
@@ -491,8 +471,6 @@ Fixpoint no_conn_dup (lst : list string) : Prop :=
 
 Fixpoint path_follow_atc (path : list Edge_type) (atc : list string) : Prop :=
     atc = path_coresp_atc path.
-
-
 
 (* sanity check*)
 Example path_follow_atc_eg1 : path_follow_atc  [(((Ch, input), (BC, Ch)),    C);
@@ -688,13 +666,15 @@ simpl in H1. contradiction.
             destruct H_n_s_follow2 as [n_hd H_n_s_follow2].
             destruct H_n_s_follow2 as [n_tl H_n_s_follow2].
             destruct H_n_s_follow2 as [H_n_s_follow2 H_n_s_follow3].
-            apply state_handle_preserve_origin_atc in H1r1 as H_atc. rewrite <- H_atc.
+            apply state_handle_preserve_origin_atc in H1r1 as H_atc.
+            { rewrite <- H_atc.
             apply IHrb with (end_v := end_v) (D := D) (hd := n_hd) (tl := n_tl) (s := n_s) (path := path).
             - assumption.
             - assumption.
             - assumption.
             - assumption.
-
+            }
+            {rewrite -> H_path_not_empty. discriminate. }
     + (* not reach endpoint *)
         split_in_flat_map H1 n_s H1_1 H1_2.
         fold find_path in H1_2.
@@ -711,12 +691,15 @@ simpl in H1. contradiction.
         destruct H_n_s_follow2 as [n_hd H_n_s_follow2].
         destruct H_n_s_follow2 as [n_tl H_n_s_follow2].
         destruct H_n_s_follow2 as [H_n_s_follow2 H_n_s_follow3].
-        apply state_handle_preserve_origin_atc in H1_1 as H_atc. rewrite <- H_atc.
+        apply state_handle_preserve_origin_atc in H1_1 as H_atc. 
+        { rewrite <- H_atc.
         apply IHrb with (end_v := end_v) (D := D) (hd := n_hd) (tl := n_tl) (s := n_s) (path := path).
         - assumption.
         - assumption.
         - assumption.
         - assumption.
+        }
+        {rewrite -> H_path_not_empty. discriminate. }
 Qed.
             
 
