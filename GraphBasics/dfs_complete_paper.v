@@ -455,9 +455,57 @@ Fixpoint path_coresp_atc (path : list Edge_type) : list string :=
     end.
 
 (* path_coresp_atc and rev are commutative *)
+Lemma coresp_atc_unit : forall path, path_coresp_atc path = [] -> path = [].
+Proof.
+    intros. induction path. 
+    - reflexivity.
+    - simpl in H. destruct path.
+        + discriminate.
+        + destruct (a.2=?e.2).
+            * apply IHpath in H. discriminate.
+            * discriminate.
+Qed. 
+
+Lemma coresp_atc_last_eq : forall path a b, 
+    a.2 = b.2 -> path_coresp_atc ((path++[a])++[b]) = path_coresp_atc (path ++ [a]).
+Proof. 
+    intros. simpl. Admitted.
+
+Lemma coresp_atc_last_neq : forall path a b, 
+    a.2<> b.2 -> path_coresp_atc ((path++[a])++[b]) = (path_coresp_atc (path++[a])) ++ [b.2].
+Proof.
+    intros. simpl. Admitted. 
+
+
 Lemma path_follow_atc_rev_comm : forall path, 
     path_coresp_atc (rev path) = rev (path_coresp_atc path).
-Proof. Admitted. 
+Proof. 
+    induction path. reflexivity. simpl. destruct a. simpl.
+    assert(rev (path_coresp_atc (rev path)) = (path_coresp_atc path)).
+        rewrite -> IHpath. apply rev_involutive.
+    assert(forall a b:list string, a = rev b -> rev a = b).
+        intros. rewrite -> H0. apply rev_involutive. 
+    (* destruct (rev path). 
+        - simpl. rewrite <- H. simpl. simpl in IHpath. apply H0 in IHpath. simpl in IHpath.
+            assert(path_coresp_atc path = []). rewrite <- IHpath. reflexivity.
+            apply coresp_atc_unit in H1. rewrite -> H1. simpl. reflexivity.
+        - assert(path = l++[e]).   *)
+    destruct path eqn:Hp.
+        - reflexivity.
+        - assert(rev (e::l) = rev l ++ [e]). simpl. reflexivity. rewrite -> H1.
+        destruct (s0=?e.2) eqn:Hb. 
+            + apply String.eqb_eq in Hb. 
+            destruct e. simpl in Hb. rewrite -> Hb. rewrite <- IHpath. rewrite -> H1.
+            apply coresp_atc_last_eq with (path := rev l) (a:=(p0, s1)) (b:=(p, s1)). reflexivity.
+            + apply String.eqb_neq in Hb. rewrite <- H. 
+            assert(path_coresp_atc ((rev l ++ [e]) ++ [(p, s0)]) = (path_coresp_atc ((rev l ++ [e]))) ++ [s0]).
+                apply coresp_atc_last_neq with (a:=e) (b:=(p,s0)). auto.
+            assert(rev (s0:: rev (path_coresp_atc (rev (e::l)))) = rev (rev (path_coresp_atc (rev (e::l)) ))++[s0] ).  
+                simpl. reflexivity.
+            assert (rev (rev (path_coresp_atc (rev (e::l)))) = path_coresp_atc (rev (e::l))).
+                apply rev_involutive.
+            rewrite -> H4 in H3. rewrite -> H3. assumption.
+Qed. 
 
 (* no consecutive duplicationl; not being used for now *)
 Fixpoint no_conn_dup (lst : list string) : Prop :=
