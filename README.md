@@ -1,12 +1,11 @@
 # Dependency
-CoqHammer with at least Vampire and Eprover installed. (Otherwise trust the hammer tactic works at its every occurance) https://github.com/princeton-vl/CoqGym/tree/master/ASTactic/coqhammer
+CoqHammer with at least Vampire and Eprover installed. (Otherwise trust the hammer tactic works at its every occurrence) https://github.com/princeton-vl/CoqGym/tree/master/ASTactic/coqhammer
 
 mathcomp.
 
 # Algorithm
 The current algorithm is in https://github.com/rinshankaihou/pathway_finding_ver/blob/master/GraphBasics/dfs_complete_paper.v.
-
-
+Top level function: find_path_wrapper.
 
 Definitions and Conventions:
 
@@ -27,9 +26,9 @@ Definitions and Conventions:
                        
     atc_*: atc commands, Taxiway_type or (list Taxiway_type)
     
-    p|*path: a path, list Edges
+    p | path: a path, list Edges
     
-    s|n_s|*state: a State_type
+    s | n_s | state: a State_type
 
     D: a Directed graph
     
@@ -54,4 +53,4 @@ Then this SomeProp guarantees a program execution path that produces p.
 
 Consider using reflection since our soundness spec sounds very deterministic.
 https://softwarefoundations.cis.upenn.edu/vfa-current/Decide.html
-ssrelfect may have better reflection style.
+
