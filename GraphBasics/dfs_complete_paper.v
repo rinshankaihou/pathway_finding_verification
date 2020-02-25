@@ -2,49 +2,54 @@ Require Import Coq.Strings.String.
 Open Scope string_scope.
 
 From mathcomp Require Import all_ssreflect.
-(* Require Import Coq.Lists.List. *)
-From GraphBasics Require Export Vertices.
+Require Import Coq.Lists.List.
 Import ListNotations.
 Require Import Coq.Bool.Bool.
+From Coq.Arith Require Import Arith EqNat.
+From Hammer Require Import Hammer.
 
-From Hammer Require Import Hammer. (*all hammer is replaced*)
+(* configure Hintdb *)
+Hint Resolve beq_nat_refl.
 
-(*
-    Node_type : (Vertex * Vertex)
-        (current, from)
-    taxiway : string
-
-    Edge_type : (Node_type * Node_type) * string
-        ((end1, end2), taxiway)
-
-    Graph_type : list Edge_type
-
-
-    State_type : ((list Edge_type * string) * list string)
-        ((results, current_taxiway), rest_ATC)
-
-    Result : option (list Edge_type)
+(* 
+Naming Convention
+    ARB: Ann Arbor Municipal Airport
+    NG: Naive graph
+    CG: complete graph
 *)
 
+(* a vertex in the (naive) graph. (index i = index j) iff i=j *)
+Inductive Vertex : Type := | index (i : nat).
+
+(* for hypothesis with the form In elem (flat_map ..) *)
 Ltac split_in_flat_map H1 elem output_H1 output_H2 :=
     apply in_flat_map in H1; destruct H1 as [elem output_H1]; destruct output_H1 as [output_H1 output_H2].
 
-Definition Node_type : Type := (Vertex * Vertex).
-Definition Edge_type : Type := (Node_type * Node_type) * string.
-Definition Graph_type : Type := list Edge_type.
+(* a node in the complete graph. (Current_v, From_v) *)
+Definition Node_type : Type :=   (Vertex  *  Vertex).
 
+(* a taxiway name is a string *)
+Definition Taxiway_type : Type := string.
+
+(* a directed edge in the complete graph.
+                               (To_node,    From_node),  taxiway_name *)
+Definition Edge_type : Type := (Node_type * Node_type) * string.
+
+(*                              (unordered) list of edges *)
+Definition Graph_type : Type := list Edge_type.
 
 Inductive Result_type : Type :=
     | CANNOT_FIND
     | TOO_MANY_PATH
     | ATC_ERROR
     | SOME_P (result: (list Node_type)).
-(* EXAMPLES *)
 
-Definition input := index 0.
-(* input should be a node meaningless, but only indicate it's input *)
+(* hardcoded input vertex. if a vertex is start_vertex in the naive graph, 
+   we encode input Node in the complete graph to be ((start_vertex, input), (start_vertex, input)) *)
+Definition input : Vertex := index 0.
 
-Example AA3 := index 1.
+(* vertices in the naive graph, ARB *)
+Example AA3 : Vertex := index 1.
 Example AB := index 2.
 Example AC := index 3.
 Example AA1 := index 4.
@@ -54,7 +59,8 @@ Example A3r := index 7.
 Example A2r := index 8.
 Example A1r := index 9.
 
-Example A := "A".
+(* taxiway names in the *)
+Example A : Taxiway_type := "A".
 Example B := "B".
 Example C := "C".
 Example A1 := "A1".
@@ -99,11 +105,8 @@ Example ann_arbor : Graph_type :=[
 (* =========== find_edge =============*)
 Definition eqv (v1 : Vertex) (v2 : Vertex) : bool :=
   match v1, v2 with
-  index n1, index n2 => beq_nat n1 n2
+  index n1, index n2 => Nat.eqb n1 n2
   end.
-
-
-
 
 Lemma eqv_true :
     forall v1 v2, (eqv v1 v2 = true) -> (v1 = v2).
@@ -122,6 +125,7 @@ Inductive State_type : Type :=
     | State :  (list Edge_type) -> string -> (list string) -> (list string) -> State_type.
 
 Example eg_state : State_type := State [] "2" ["3"; "4"] ["1"].
+
 Definition s_1 (s : State_type) : (list Edge_type) := match s with | State cur_path _ _ _ => cur_path end.
 Definition s_2 (s : State_type) : string := match s with | State _ atc_h _ _ => atc_h end.
 Definition s_3 (s : State_type) : (list string) := match s with | State _ _ atc_t _ => atc_t end.
@@ -130,11 +134,13 @@ Notation "S @1" := (s_1 S) (at level 1, no associativity).
 Notation "S @2" := (s_2 S) (at level 1, no associativity).
 Notation "S @3" := (s_3 S) (at level 1, no associativity).
 Notation "S @4" := (s_4 S) (at level 1, no associativity).
+
 Lemma s_notation_sound : forall (s : State_type),
     s = State s@1 s@2 s@3 s@4.
 Proof. intro s. destruct s as [s1 s2 s3 s4] eqn:H. reflexivity. Qed.
     
 Eval compute in  (eg_state@1, eg_state@2, eg_state@3, eg_state@4).
+
 (* ============ helper functions ============*)
 
 Definition is_on_next_taxiway (cur_s : State_type) (e : Edge_type) : bool :=
@@ -242,7 +248,7 @@ Definition node_result_caller (start_v : Vertex) (end_v : Vertex) (ATC : list st
     end.
 
 
-
+(* test cases using ARB *)
     Example eg_find_path_1 : node_result_caller Ch AB [C] ann_arbor = CANNOT_FIND.
     Proof. reflexivity. Qed.
         
@@ -297,10 +303,11 @@ Fixpoint path_conn (path : list Edge_type): Prop :=
     | [] => True (* a path shorter than 2 edges is trivially connected *)
     end.
 
-Lemma eq_vertex : forall v1 v2, eqv v1 v2 <-> v1 = v2.
+    
+Lemma eq_vertex : forall (v1 v2 : Vertex), eqv v1 v2 <-> v1 = v2.
 Proof. intros v1 v2.  split. 
 -intros H. destruct v1, v2. unfold eqv in H. apply beq_nat_true in H. auto.
--intros H.  destruct v1, v2. unfold eqv. inversion H. clear H H1. induction n0. auto. auto.
+-intros H.  destruct v1 as [n1], v2 as [n2]. unfold eqv. inversion H. Locate "=?" % nat_scope. unfold Nat.eqb.  auto.
 Qed.
 
 (* if e1 ends at node n, then e2 given by find_edge starts at the same node n *)
