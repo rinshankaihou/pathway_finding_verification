@@ -695,17 +695,26 @@ Definition origin_atc (s : State_type) := (rev s@4) ++ [s@2] ++ s@3.
 Ltac unfold_in_find_edge H :=
     unfold find_edge in H.
 
-Lemma state_handle_preserve_origin_atc : forall s ns D, 
-    (s @1) <> [] -> In ns (state_handle s D) -> origin_atc ns = origin_atc s.
+Lemma state_handle_properties : forall s ns D, 
+    (s @1) <> [] -> In ns (state_handle s D) -> 
+    (origin_atc ns = origin_atc s) /\ 
+    (tl ns@1 = s@1) /\ 
+    ((forall e, In e s@1 -> In e D) -> (forall e, In e ns@1 -> In e D)).
 Proof. intros s ns D H1 H2. unfold state_handle in H1.
     destruct (s @1) eqn: H_s. 
-    - contradiction. 
-    - unfold state_handle in H2. rewrite H_s in H2. simpl in H2.
+    {contradiction. } 
+    unfold state_handle in H2. rewrite H_s in H2. simpl in H2.
     split_in_flat_map H2 n_e H3_1 H3_2.
     unfold packer in H3_2. 
     destruct (is_on_this_taxiway s n_e).
     - simpl in H3_2. destruct H3_2.
-        + unfold origin_atc. rewrite <- H. reflexivity.
+        + unfold origin_atc. rewrite <- H. rewrite -> H_s. 
+        split. * reflexivity.
+        split. * auto.
+            * intros H_s_in_D e0 H_e_in_path. simpl in H_e_in_path.
+            destruct H_e_in_path. {hammer. }
+            destruct H0.          {hammer. }
+                                  {hammer. }
         + contradiction.
     - destruct (is_on_next_taxiway s n_e) eqn: H_on_next.
         + simpl in H3_2. destruct H3_2.
@@ -714,12 +723,32 @@ Proof. intros s ns D H1 H2. unfold state_handle in H1.
                 destruct (s @3) eqn: H_s3.
                 { simpl in H_on_next. discriminate H_on_next. }
                 { simpl in H_on_next. rewrite -> String.eqb_eq in H_on_next.
-                    rewrite <- H_on_next. simpl. rewrite <- app_assoc. auto.
+                    rewrite <- H_on_next. simpl. rewrite <- app_assoc. split.
+                    - auto.
+                    split.
+                        * auto.
+                        * intros H_s_in_D e0 H_e_in_path. simpl in H_e_in_path.
+                        destruct H_e_in_path. {hammer. }
+                                             {hammer. }
                 }
             * contradiction.
         + contradiction.
 Qed. 
 
+(* separate lemmas to not break following proof *)
+Lemma state_handle_preserve_origin_atc : forall s ns D, 
+    (s @1) <> [] -> In ns (state_handle s D) -> origin_atc ns = origin_atc s.
+Proof. apply state_handle_properties. Qed.
+
+Lemma state_handle_grow_path_by_1 : forall s ns D, 
+    (s @1) <> [] -> In ns (state_handle s D) -> 
+    tl ns@1 = s@1.
+Proof. apply state_handle_properties. Qed.
+
+Lemma state_handle_new_edge_in_graph : forall s ns D,
+    (s @1) <> [] -> In ns (state_handle s D) -> 
+    ((forall e, In e s@1 -> In e D) -> (forall e, In e ns@1 -> In e D)).
+    Proof. apply state_handle_properties. Qed.
 
 (* H_reach_end : if_reach_endpoint s end_v = true,
    H_path_not_empty:  s @1 = (hd :: tl), evidence that s@1 is not empty
@@ -805,7 +834,8 @@ Qed.
 
 (* for H that contains find_path, split it into [Hl | Hr] *)
 Ltac unpack_find_path_in_H H Hl Hr := unfold find_path in H; apply in_app_or in H; destruct H as [Hl | Hr].
-Ltac unpack_find_path := unfold find_path; apply in_app_or.
+
+
 
 Require Import Coq.Program.Equality.
 Require Import Arith.
@@ -813,10 +843,10 @@ Require Import Coq.Program.Tactics.
 Lemma output_path_in_graph:
     forall round_bound end_v D path (e : Edge_type) (s : State_type),
     s@1 <> [] -> (* s@1 is not empty *)
-    (forall c_e, In c_e (tl (rev s@1)) -> In c_e D)  -> (* all but the first one in s@1 (cur_path) is in D *)
+    (forall c_e, In c_e s@1 -> In c_e D)  -> (* all but the first one in s@1 (cur_path) is in D *)
     In path (find_path end_v D round_bound s) ->
     In e path ->
-    (forall n_e, In n_e (tl (path)) -> In n_e D). (* then all but the first one in n_s@1 (cur_path) is in D *)
+    (forall n_e, In n_e path -> In n_e D). (* then all but the first one in n_s@1 (cur_path) is in D *)
 Proof. intro rb. dependent induction rb.
 - intros. simpl in H0. contradiction.
 - intros e_v D path e s H_s1_not_empty H_s_in_D path_in_findpath e_in_path n_e H_n_e_in_path.
@@ -830,19 +860,24 @@ unpack_find_path_in_H path_in_findpath path_in_findpath_l path_in_findpath_r.
         * (* reach endpoint *)
         unpack_if_reach_endpoint H_if_end H_s1 H_end H_s3_empty.
         simpl in *. assert(Hpath : rev s @1 = path) by tauto. clear path_in_findpath_l.
-        rewrite -> Hpath in H_s_in_D. apply H_s_in_D in H_n_e_in_path. assumption.
+        rewrite <- Hpath in H_n_e_in_path.
+        assert(H_n_e_in_path_equiv: In n_e (s @1)). 
+        {rewrite <- in_rev in H_n_e_in_path. assumption. }
+        auto.
         * (* not reach endpoint *) contradiction.
     + (* right part of findpath *)
     split_in_flat_map path_in_findpath_r n_s H3 H4.
-    apply IHrb with (end_v := e_v)  (path := path) (s := n_s) (e := n_e).
-    1-5:auto. 
-    - fold find_path in H4. unfold state_handle in H3.
-    (* write a lemma stating property for In s state_handle *)
-    simpl in *. assert(H_path: rev s @1 = path) by tauto. clear path_in_findpath_l.
+        apply IHrb with (end_v := e_v)  (path := path) (s := n_s) (e := n_e).  
+        * fold find_path in H4. apply state_handle_grow_path_by_1 in H3.
+        destruct n_s @1 as [| n_path'] eqn: H_n_s1. 
+            {auto. } 
+            {congruence. }
+        rewrite -> H_s1. congruence.
+        * {intros n_e' H_n_e'. (* n_e' is any edge in n_s *)
+        fold find_path in H4.
+        apply state_handle_new_edge_in_graph with (s:=s) (ns:=n_s).
+        1-4:auto. }
+        1-3:auto.
+Qed.
 
-
-        * auto. 
-        *  {unfold find_path. apply in_app_or. unpack_find_path. }
-
-        right. simpl in Hl. destruct Hl as [Hl | Hl]. Focus 2. contradiction.
-        rewrite -> H_s in Hl. simpl in Hl.
+    
