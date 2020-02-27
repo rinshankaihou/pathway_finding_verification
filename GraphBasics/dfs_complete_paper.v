@@ -8,6 +8,10 @@ Open Scope string_scope.
 Open Scope list_scope.
 From Hammer Require Import Hammer.
 
+Require Import Coq.Program.Equality.
+Require Import Arith.
+Require Import Coq.Program.Tactics.
+
 (* configure Hintdb *)
 Hint Resolve beq_nat_refl.
 
@@ -165,6 +169,18 @@ Definition if_reach_endpoint (cur_s : State_type) (end_v : Vertex) : bool :=
     | Some e => (eqv e.1.2.1 end_v) && (eqn (List.length cur_s@3) 0)
     end.  
 
+
+(* H_reach_end : if_reach_endpoint s end_v = true,
+   H_path_not_empty:  s @1 = (hd :: tl), evidence that s@1 is not empty
+   H_reach_end_1 H_reach_end_2: output hyps
+   *)
+Ltac unpack_if_reach_endpoint H_reach_end H_path_not_empty H_reach_end_1 H_reach_end_2:= 
+   unfold if_reach_endpoint in H_reach_end; simpl in H_reach_end; 
+   rewrite -> H_path_not_empty in H_reach_end;
+   apply andb_true_iff in H_reach_end; destruct H_reach_end as [H_reach_end_1 H_reach_end_2]; 
+   apply Nat.eqb_eq in H_reach_end_2; apply length_zero_iff_nil in H_reach_end_2;
+   apply eqv_eq in H_reach_end_1.
+
 (* =================  state handler functions ==============*)
 (*
     for each edge starts from current:
@@ -209,7 +225,10 @@ Fixpoint find_path (end_v : Vertex) (D : Graph_type) (round_bound : nat) (cur_s 
         (flat_map (find_path end_v D n) (state_handle cur_s D))
     end. 
 
-
+(* for H that contains find_path, split it into [Hl | Hr], 
+   AND INTRODUCES Hl AUTOMATICALLY
+   note: Hl is first part (before ++) of find_path *)
+Ltac unpack_find_path_in_H H Hl Hr := unfold find_path in H; apply in_app_or in H; destruct H as [Hl | Hr].
  
 
 Definition find_path_wrapper (start_v : Vertex) (end_v : Vertex) (ATC : list string) (D : Graph_type) : option (list (list Edge_type)) :=
@@ -613,7 +632,7 @@ Lemma state_handle_follow : forall s D n_s hd tl, (* s is cur_state *)
     state_follow_atc s ->  (* prev state follow atc *)
     In n_s (state_handle s D) -> (* n_s is a new_state *)
     state_follow_atc n_s /\ (exists n_hd n_tl, (n_s @1 = (n_hd::n_tl)) /\ (n_s @2 = n_hd.2)).
-    (* then n_s follow atc, and head of new_path on new_atc_hd *)
+    (* then n_s follow atcv, and head of new_path on new_atc_hd *)
 Proof. intros s D n_s hd tl Hpath Hhd H1 H2.
 
 unfold state_handle in H2.
@@ -691,15 +710,12 @@ Qed.
 
 Definition origin_atc (s : State_type) := (rev s@4) ++ [s@2] ++ s@3.
 
-(* for hypothesis with the form: In e (find_edge n D) *)
-Ltac unfold_in_find_edge H :=
-    unfold find_edge in H.
-
 Lemma state_handle_properties : forall s ns D, 
-    (s @1) <> [] -> In ns (state_handle s D) -> 
-    (origin_atc ns = origin_atc s) /\ 
-    (tl ns@1 = s@1) /\ 
-    ((forall e, In e s@1 -> In e D) -> (forall e, In e ns@1 -> In e D)).
+    (s @1) <> [] -> (* cur_path is not empty *)
+    In ns (state_handle s D) -> (* ns is a new state derived from s *)
+    (origin_atc ns = origin_atc s) /\ (* then the ATC are the same *)
+    (tl ns@1 = s@1) /\  (* and ns@1 grows s@1 by 1 edge *)
+    ((forall e, In e s@1 -> In e D) -> (forall e, In e ns@1 -> In e D)). (* every edge is in D *)
 Proof. intros s ns D H1 H2. unfold state_handle in H1.
     destruct (s @1) eqn: H_s. 
     {contradiction. } 
@@ -750,16 +766,6 @@ Lemma state_handle_new_edge_in_graph : forall s ns D,
     ((forall e, In e s@1 -> In e D) -> (forall e, In e ns@1 -> In e D)).
     Proof. apply state_handle_properties. Qed.
 
-(* H_reach_end : if_reach_endpoint s end_v = true,
-   H_path_not_empty:  s @1 = (hd :: tl), evidence that s@1 is not empty
-   H_reach_end_1 H_reach_end_2: output hyps
-   *)
-Ltac unpack_if_reach_endpoint H_reach_end H_path_not_empty H_reach_end_1 H_reach_end_2:= 
-unfold if_reach_endpoint in H_reach_end; simpl in H_reach_end; 
-rewrite -> H_path_not_empty in H_reach_end;
-apply andb_true_iff in H_reach_end; destruct H_reach_end as [H_reach_end_1 H_reach_end_2]; 
-apply Nat.eqb_eq in H_reach_end_2; apply length_zero_iff_nil in H_reach_end_2;
-apply eqv_eq in H_reach_end_1.
 
 Lemma find_path_follow_atc: forall rb end_v D s path hd tl,
     s @2 = hd.2 ->
@@ -832,14 +838,11 @@ apply find_path_follow_atc with (end_v := end_v) (D := D)
 - auto.
 Qed.
 
-(* for H that contains find_path, split it into [Hl | Hr] *)
-Ltac unpack_find_path_in_H H Hl Hr := unfold find_path in H; apply in_app_or in H; destruct H as [Hl | Hr].
 
 
 
-Require Import Coq.Program.Equality.
-Require Import Arith.
-Require Import Coq.Program.Tactics.
+
+
 Lemma output_path_in_graph:
     forall round_bound end_v D path (e : Edge_type) (s : State_type),
     s@1 <> [] -> (* s@1 is not empty *)
@@ -880,4 +883,62 @@ unpack_find_path_in_H path_in_findpath path_in_findpath_l path_in_findpath_r.
         1-3:auto.
 Qed.
 
-    
+(* Ltac unpack_if_reach_endpoint_in_goal H_path_not_empty H_reach_end_1 H_reach_end_2:= 
+   unfold if_reach_endpoint; simpl; 
+   rewrite -> H_path_not_empty;
+   apply andb_true_iff; destruct; 
+   [apply Nat.eqb_eq; apply eqv_eq | apply length_zero_iff_nil]. *)
+
+Lemma find_path_preserve_path_lemma:
+    forall round (s n_s : State_type) end_v D path,
+    s@1 <> [] ->
+    In n_s (state_handle s D) -> (* n_s is derived from s *)
+    In path (find_path end_v D round n_s) -> (* path can be found from n_s in rund steps *)
+    In path (find_path end_v D round s). (* then path can be found from the old s in round steps *)
+Proof. intro r. induction r.
+- intros. simpl in *. contradiction.
+- intros. unfold find_path.  apply in_app_or. 
+unfold if_reach_endpoint; simpl.
+destruct (s@1) eqn: H_path_not_empty. contradiction.
+simpl. apply andb_true_iff.
+
+
+Lemma find_path_preserve_path:
+    forall round (s : State_type) end_v D path,
+    s@1 <> [] ->
+    In path (find_path end_v D round s) ->
+    (exists l, (rev path) = l ++ s @1). (* path is normal order (start_v comes first), while s@1 is reverse order *)
+                                        (* path is grown by *)
+Proof. intro rb. dependent induction rb.
+- intros. simpl in H0. contradiction. 
+- intros. unpack_find_path_in_H H0 Hl Hr.
+    + (* first part of find_path *) destruct (if_reach_endpoint s end_v).
+        * simpl in Hl. assert(rev s @1 = path) by tauto. 
+        rewrite <- H0. rewrite -> rev_involutive. exists []. reflexivity.
+        * contradiction.
+    + (* second part of find_path *)
+    fold find_path in Hr.
+    apply IHrb with (end_v := end_v) (D := D).
+        - assumption.
+        - split_in_flat_map Hr n_s H1 H2. fold find_path in H2.
+        destruct rb eqn: Hrb.
+            * simpl in H2. contradiction.
+            * 
+
+
+
+
+             * unpack_find_path H2 H2l H2r.
+             destruct (if_reach_endpoint n_s end_v).
+             { (* reach endpoint *) simpl in H2l. assert(rev n_s @1 = path) by tauto.   }
+        * simpl in Hl. assert(rev s @1 = path) by tauto. 
+        rewrite <- H0. rewrite -> rev_involutive. exists []. reflexivity.
+        * contradiction.
+
+Theorem output_path_start_correct:
+    forall start_v end_v ATC D (path : list Edge_type) (paths : list (list Edge_type)),
+    Some paths = (find_path_wrapper (start_v : Vertex) (end_v : Vertex) (ATC : list string) (D : Graph_type)) ->
+    In path paths ->
+    (* last edge in path is ((start_v, input), (start_v, input), taxiway_name) *)
+    exists taxiway_name, hd_error (rev path) = Some ((start_v, input), (start_v, input), taxiway_name).
+intros. 
