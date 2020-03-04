@@ -14,6 +14,7 @@ Require Import Coq.Program.Equality.
 Require Import Arith.
 Require Import Coq.Program.Tactics.
 
+(* ========== Naive (undirected) Graph ========== *)
 
 (* 
     a vertex in the (undirected) graph. 
@@ -41,27 +42,41 @@ Proof. intros. split.
 Qed.
 
 (* 
+    Taxiway_type is a string of the taxiway name
+*)
+Definition Taxiway_type : Type := string.
+
+(*
+    an edge in the undirected graph
+    meaning = (one vertex, another vertex, taiwayname)
+*)
+Definition N_Edge_type : Type := ((Vertex, Vertex), Taxiway_type).
+
+(*  
+    a graph is the naive graph,
+        in the form of a list of undirected edges, not necessarily ordered
+*)
+Definition N_Graph_type : Type := list N_Edge_type.
+
+(* ========== Complete (directed) Graph ========== *)
+
+(* 
     a node in the complete (directed) graph. 
     meaning = (current_vertex, previous_vertex) 
 *)
 Definition Node_type : Type :=   (Vertex  *  Vertex).
 
 (* 
-    Taxiway_type is a string of the taxiway name
-*)
-Definition Taxiway_type : Type := string.
-
-(* 
     a directed edge in the complete (directed) graph.
     meaning = ((start node, end node), the taxiway name of the edge)
 *)
-Definition Edge_type : Type := (Node_type * Node_type) * Taxiway_type.
+Definition C_Edge_type : Type := (Node_type * Node_type) * Taxiway_type.
 
 (*  
     a graph is the complete graph,
         in the form of a list of edges, not necessarily ordered
 *)
-Definition Graph_type : Type := list Edge_type.
+Definition C_Graph_type : Type := list C_Edge_type.
 
 
 (* 
@@ -77,13 +92,13 @@ Definition Graph_type : Type := list Edge_type.
         Input ATC = (rev atc_used) ++ [atc_f] ++ atc_t 
 *)
 Inductive State_type : Type :=
-    | State :  (list Edge_type) -> string -> (list string) -> (list string) -> State_type.
+    | State :  (list C_Edge_type) -> string -> (list string) -> (list string) -> State_type.
 
 (*
     For easier use, we introduce a set of notation to access component in State_type
     "s @n" means the n-th component in the State_type 
 *)
-Definition s_1 (s : State_type) : (list Edge_type) := match s with | State cur_path _ _ _ => cur_path end.
+Definition s_1 (s : State_type) : (list C_Edge_type) := match s with | State cur_path _ _ _ => cur_path end.
 Definition s_2 (s : State_type) : string := match s with | State _ atc_h _ _ => atc_h end.
 Definition s_3 (s : State_type) : (list string) := match s with | State _ _ atc_t _ => atc_t end.
 Definition s_4 (s : State_type) : (list string) := match s with | State _ _ _ atc_used => atc_used end.

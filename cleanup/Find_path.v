@@ -21,7 +21,7 @@ From Taxiway Require Export Types.
 (*
     check whether the edge e is on the next ATC command in state cur_s
 *)
-Definition if_on_next_taxiway (cur_s : State_type) (e : Edge_type) : bool :=
+Definition if_on_next_taxiway (cur_s : State_type) (e : C_Edge_type) : bool :=
     match hd_error cur_s@3 with
     | None => false
     | Some t => t =? e.2
@@ -30,10 +30,10 @@ Definition if_on_next_taxiway (cur_s : State_type) (e : Edge_type) : bool :=
 (*
     check whether the edge e is on current taxiway of state cur_s
 *)
-Definition if_on_current_taxiway (cur_s : State_type) (e : Edge_type) : bool :=
+Definition if_on_current_taxiway (cur_s : State_type) (e : C_Edge_type) : bool :=
     cur_s@2 =? e.2.
 
-Lemma on_current_taxiway_lemma : forall (s:State_type) (e:Edge_type), 
+Lemma on_current_taxiway_lemma : forall (s:State_type) (e:C_Edge_type), 
     if_on_current_taxiway s e -> (e.2 =? s@2).
 Proof. intros s e H. unfold if_on_current_taxiway in H. 
     rewrite -> String.eqb_sym. assumption. Qed.
@@ -50,7 +50,7 @@ Definition if_reach_endpoint (cur_s : State_type) (end_v : Vertex) : bool :=
 (*
     check whether an edge starts from current node
 *)
-Definition next_edges (current : Node_type) (e : Edge_type) : bool :=
+Definition next_edges (current : Node_type) (e : C_Edge_type) : bool :=
     (eqv current.1 e.1.1.1) && (eqv current.2 e.1.1.2).
 
 (* ============ find edges ============*)
@@ -58,7 +58,7 @@ Definition next_edges (current : Node_type) (e : Edge_type) : bool :=
 (*
     filter on the graph to find all edges start from current noe
 *)
-Definition find_edge (current : Node_type) (D : Graph_type) : list Edge_type :=
+Definition find_edge (current : Node_type) (D : C_Graph_type) : list C_Edge_type :=
     filter (next_edges current) D.
 
 (* ============ step functions ============*)
@@ -69,7 +69,7 @@ Definition find_edge (current : Node_type) (D : Graph_type) : list Edge_type :=
         if is valid return a list of one corresponding state,
         if not, return an empty list
 *)
-Definition step_state_by_e (cur_s : State_type) (e : Edge_type) : list State_type :=
+Definition step_state_by_e (cur_s : State_type) (e : C_Edge_type) : list State_type :=
     if if_on_current_taxiway cur_s e
     then [State (e::cur_s@1) cur_s@2 cur_s@3 cur_s@4]
     else if if_on_next_taxiway cur_s e (* on the next taxiway *)
@@ -83,7 +83,7 @@ Definition step_state_by_e (cur_s : State_type) (e : Edge_type) : list State_typ
     
     step_states may find other possible paths to endpoint
 *)
-Definition step_states (cur_s : State_type) (D : Graph_type) : list State_type :=
+Definition step_states (cur_s : State_type) (D : C_Graph_type) : list State_type :=
     match hd_error cur_s@1 with
     | None => []
     | Some e => flat_map (step_state_by_e cur_s) (find_edge e.1.2 D)
@@ -103,7 +103,7 @@ Definition step_states (cur_s : State_type) (D : Graph_type) : list State_type :
     find_path_aux may return zero or more than one path,
         it requires a sufficient large round bound
 *)
-Fixpoint find_path_aux (end_v : Vertex) (D : Graph_type) (round_bound : nat) (cur_s : State_type) : list (list Edge_type) :=
+Fixpoint find_path_aux (end_v : Vertex) (D : C_Graph_type) (round_bound : nat) (cur_s : State_type) : list (list C_Edge_type) :=
     match round_bound with
     | 0 => []
     | S n =>
@@ -124,7 +124,7 @@ Definition input : Vertex := index 0.
     find_path is the top-level function
     find_path packs original input into initial state and call find_path_aux
 *)
-Definition find_path (start_v : Vertex) (end_v : Vertex) (ATC : list string) (D : Graph_type) : option (list (list Edge_type)) :=
+Definition find_path (start_v : Vertex) (end_v : Vertex) (ATC : list string) (D : C_Graph_type) : option (list (list C_Edge_type)) :=
     match ATC with
     | [] => None (* ATC error *)
     | t :: rest => Some (find_path_aux end_v D 100 (State [(((start_v, input), (start_v, input)), t)] t rest []))
