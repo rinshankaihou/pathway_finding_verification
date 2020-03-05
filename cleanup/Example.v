@@ -43,7 +43,7 @@ Example A2 := "A2".
 Example A3 := "A3".
 
 (* ============ graph ============*)
-Example ann_arbor : Graph_type :=[
+Example ann_arbor : C_Graph_type :=[
     (((Ch, input), (BC, Ch)), C);
     (((A3r, input), (AA3, A3r)), A3);
     (((A2r, input), (AB, A2r)), A2);
@@ -67,6 +67,7 @@ Example ann_arbor : Graph_type :=[
     (((AC, AA1), (AB, AC)), A);
     (((AC, AA1), (BC, AC)), C);
     (((AC, BC), (AB, AC)), A);
+    (((AC, BC), (AA1, AC)), A);
     (((AA1, A1r), (AC, AA1)), A);
     (((AA1, AC), (A1r, AA1)), A1);
     (((BC, Ch), (AB, BC)), B);
@@ -77,6 +78,21 @@ Example ann_arbor : Graph_type :=[
     (((BC, AC), (AB, BC)), B)
 ].
 
+Example naive_ann_arbor : N_Graph_type :=[
+    ((Ch, input), "");
+    ((A1r, input), "");
+    ((A2r, input), "");
+    ((A3r, input), "");    
+    ((Ch, BC), C);
+    ((BC, AB), B);
+    ((AB, AA3), A);
+    ((AA3, A3r), A3);
+    ((AB, A2r), A2);
+    ((BC, AC), C);
+    ((AB, AC), A);
+    ((AC, AA1), A);
+    ((AA1, A1r), A1)
+].
 
 (* ============ testcases ============*)
 Example eg_find_path_aux_1 : find_path Ch AB [C] ann_arbor = Some ([]).
@@ -105,3 +121,5 @@ Example eg_find_path_aux_6 : find_path Ch Ch [C; B; A; C; B; A; C] ann_arbor =
     Some ([[(((Ch, input), (Ch, input)), C); (((Ch, input), (BC, Ch)), C); (((BC, Ch), (AB, BC)), B); (((AB, BC), (AC, AB)), A);
     (((AC, AB), (BC, AC)), C); (((BC, AC), (AB, BC)), B); (((AB, BC), (AC, AB)), A); (((AC, AB), (BC, AC)), C); (((BC, AC), (Ch, BC)), C)]]).
 Proof. reflexivity. Qed. 
+
+

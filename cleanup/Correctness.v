@@ -90,7 +90,7 @@ Ltac unpack_find_path_aux_in_H H Hl Hr := unfold find_path_aux in H; apply in_ap
             prop
 
         goal has the form:
-            forall start_v end_v ATC D (path : list C_Edge_type) (paths : list (list C_Edge_type)),
+            forall start_v end_v ATC D (path : list Edge_type) (paths : list (list Edge_type)),
             Some paths = (find_path (start_v : Vertex) (end_v : Vertex) (ATC : list string) (D : C_Graph_type)) ->
             In path paths ->
             prop
@@ -111,7 +111,7 @@ Ltac aux_to_output lemma :=
 (* ========== The path is a connected path ==========*)
 
 (* function to check whether two edges are connected *)
-Definition edge_conn (e1 : C_Edge_type) (e2 : C_Edge_type) : Prop :=
+Definition edge_conn (e1 : Edge_type) (e2 : Edge_type) : Prop :=
     e1.1.1 = e2.1.2.
 
 (* 
@@ -120,7 +120,7 @@ Definition edge_conn (e1 : C_Edge_type) (e2 : C_Edge_type) : Prop :=
 
     note that the function checks reverse order, since find_path_aux is reversed
 *)
-Fixpoint path_conn (path : list C_Edge_type): Prop :=
+Fixpoint path_conn (path : list Edge_type): Prop :=
     match path with
     | path_f::path_r => match path_r with
         | path_s::path_r_r => (edge_conn path_f path_s) /\ (path_conn path_r)
@@ -274,12 +274,12 @@ Definition origin_atc (s : State_type) := (rev s@4) ++ [s@2] ++ s@3.
 
 (* 
     path_coresp_atc extracts a path's corresponding atc 
-    INPUT: list C_Edge_type, 
+    INPUT: list Edge_type, 
         eg the taxiway names of each edge is like AACCCB 
     OUTPUT: list strings, 
         eg ACB 
 *)
-Fixpoint path_coresp_atc (path : list C_Edge_type) : list string :=
+Fixpoint path_coresp_atc (path : list Edge_type) : list string :=
     match path with
     | [] => []
     | a::b => match b with
@@ -306,7 +306,7 @@ Qed.
     start to prove that path_coresp_atc and List.rev are commuatative 
     We have two lemmas in order to prove commutative.
 *)
-Lemma path_coresp_atc_lemma1 : forall (l : seq.seq C_Edge_type) (b a : C_Edge_type),
+Lemma path_coresp_atc_lemma1 : forall (l : seq.seq Edge_type) (b a : Edge_type),
     (b.2 =? a.2) ->
     path_coresp_atc ((l ++ [b]) ++ [a]) = 
     path_coresp_atc (l ++ [b]).
@@ -332,7 +332,7 @@ Proof. intro l. induction l as [|hd tl IH].
         rewrite -> Hgoal. reflexivity.
 Qed.
 
-Lemma path_coresp_atc_lemma2 : forall (l : seq.seq C_Edge_type) (b a : C_Edge_type),
+Lemma path_coresp_atc_lemma2 : forall (l : seq.seq Edge_type) (b a : Edge_type),
     (b.2 =? a.2) = false ->
     path_coresp_atc ((l ++ [b]) ++ [a]) = 
     (path_coresp_atc (l ++ [b])) ++ [a.2].
@@ -418,7 +418,7 @@ Qed.
 
 
 (* the function checks whether extracted ATC is same as input atc*)
-Definition path_follow_atc (path : list C_Edge_type) (atc : list string) : Prop :=
+Definition path_follow_atc (path : list Edge_type) (atc : list string) : Prop :=
     atc = path_coresp_atc path.
 
 (* an example, need to import Example.v*)
@@ -712,7 +712,7 @@ Proof. apply step_states_properties. Qed.
     TODO: 
 *)
 Theorem output_path_in_graph:
-    forall round_bound end_v D path (e : C_Edge_type) (s : State_type),
+    forall round_bound end_v D path (e : Edge_type) (s : State_type),
     s@1 <> [] -> (* s@1 is not empty *)
     (forall c_e, In c_e s@1 -> In c_e D)  -> (* all but the first one in s@1 (cur_path) is in D *)
     In path (find_path_aux end_v D round_bound s) ->
@@ -795,7 +795,7 @@ Corollary find_path_aux_path_not_empty:
     In path (find_path_aux end_v D round s) ->
     (exists p_hd p_tl, path = p_hd::p_tl).
 Proof. intros. destruct path as [ | p_hd p_tl] eqn: H_p.
-    assert (H1 : exists l : seq.seq C_Edge_type, rev path = l ++ s @1) by 
+    assert (H1 : exists l : seq.seq Edge_type, rev path = l ++ s @1) by 
     (apply find_path_aux_starts_with_s1 with 
     (round := round) (end_v := end_v) (D := D) (path := path) (s := s) in H;
     repeat hammer).
@@ -808,7 +808,7 @@ Qed.
     Note that the result of find_path returns in normal order
 *)
 Theorem output_path_start_correct:
-    forall start_v end_v ATC D (path : list C_Edge_type) (paths : list (list C_Edge_type)),
+    forall start_v end_v ATC D (path : list Edge_type) (paths : list (list Edge_type)),
     Some paths = (find_path (start_v : Vertex) (end_v : Vertex) (ATC : list string) (D : C_Graph_type)) ->
     In path paths ->
     (* last edge in path is ((start_v, input), (start_v, input), taxiway_name) *)
@@ -866,7 +866,7 @@ Qed.
     Note that the result of find_path returns in normal order
 *)
 Theorem output_path_end_correct:
-    forall start_v end_v ATC D (path : list C_Edge_type) (paths : list (list C_Edge_type)),
+    forall start_v end_v ATC D (path : list Edge_type) (paths : list (list Edge_type)),
     Some paths = (find_path (start_v : Vertex) (end_v : Vertex) (ATC : list string) (D : C_Graph_type)) ->
     In path paths ->
     (* last edge in path is ((start_v, input), (start_v, input), taxiway_name) *)
