@@ -102,9 +102,16 @@ Ltac aux_to_output lemma :=
     [inversion H |
         pose (init_s := (State [(start_v, input, (start_v, input), ATC_h)] ATC_h ATC_t []));
         assert (H_init_s_not_empty : init_s @1 <> []) by hammer; (* {simpl. congruence. } *)
-        apply lemma with
-            (round := 100) (end_v := end_v) (D := D) (path := path) in H_init_s_not_empty;
-        repeat hammer
+        try (
+            apply lemma with
+            (round := 100) (end_v := end_v) (D := D) (path := path) (s := init_s) in H_init_s_not_empty;
+            repeat hammer
+        );
+        try (
+            apply lemma with
+            (round := 100) (end_v := end_v) (D := D) (path := path) (s := init_s);
+            repeat hammer
+        )   
     ].
 
 
@@ -203,12 +210,12 @@ Qed.
     find_path_aux returns connected result if the input state is connected
 *)
 Lemma find_path_aux_conn:
-forall round_bound path end_v D  s res,
+forall round path end_v D  s res,
     path_conn s@1 ->
-    res = (find_path_aux end_v D round_bound s) ->
+    res = (find_path_aux end_v D round s) ->
     In path res ->
     path_conn (rev path).
-Proof. intros round_bound. induction round_bound as [| rb  IHrb].
+Proof. intros round. induction round as [| rb  IHrb].
     - intros path end_v D  s res H1 H2 H3.
     (* H1: conn cur_path *)
     unfold find_path_aux in H2. rewrite H2 in H3. simpl in H3. contradiction.
@@ -241,27 +248,27 @@ Qed.
 
 (* find_path_aux_conn, but without param 'res' *)
 Lemma find_path_aux_conn_alt:
-forall round_bound path end_v D s,
+forall round path end_v D s,
     path_conn s@1 ->
-    In path (find_path_aux end_v D round_bound s) ->
+    In path (find_path_aux end_v D round s) ->
     path_conn (rev path).
 Proof. 
-    intros round_bound path end_v D s0 H1 H2. apply find_path_aux_conn with (end_v:=end_v) (round_bound:=round_bound) (D:=D) (s:=s0) 
-    (res:=(find_path_aux end_v D round_bound s0)).
+    intros round path end_v D s0 H1 H2. apply find_path_aux_conn with (end_v:=end_v) (round:=round) (D:=D) (s:=s0) 
+    (res:=(find_path_aux end_v D round s0)).
     assumption. trivial. assumption.
 Qed.
 
+
+
 (* the top-level theorem for connection, describing the output is always connected *)
 Theorem output_path_conn:
-    forall path start_v end_v D round_bound atc_h atc_t,
-    In path (find_path_aux end_v D round_bound (State [(((start_v, input), (start_v, input)), atc_h)] atc_h atc_t []))  ->
+    forall start_v end_v ATC D (path : list Edge_type) (paths : list (list Edge_type)),
+    Some paths = (find_path (start_v : Vertex) (end_v : Vertex) (ATC : list string) (D : Graph_type)) ->
+    In path paths ->
     path_conn (rev path).
-Proof. intros path s e D rb atc_h atc_t H. 
-    apply find_path_aux_conn_alt with (round_bound := rb) (end_v := e) (D := D) 
-    (s := (State [(((s, input), (s, input)), atc_h)] atc_h atc_t [])) .
-    - simpl. trivial. 
-    - exact H.
-Qed.    
+Proof.
+aux_to_output find_path_aux_conn_alt.
+Qed. 
 
 
 (* ========== The path follows ATC command ==========*)
@@ -533,6 +540,14 @@ Proof. intros s D n_s hd tl Hpath Hhd H1 H2.
     * contradiction.
 Qed.
 
+(* facts about tl *)
+Lemma tl_app : forall {A : Type} (l : list A) (a : A), l <> [] -> tl (l ++ [a]) = (tl l) ++ [a].
+Proof. intros. destruct l eqn: H2.
+- contradiction.
+- simpl. reflexivity.
+Qed. 
+
+
 (*
     step_states_properties proves the step_states preserves invarient,
         if we go one step from s to ns, then:
@@ -545,7 +560,8 @@ Lemma step_states_properties : forall s ns D,
     In ns (step_states s D) -> (* ns is a new state derived from s *)
     (origin_atc ns = origin_atc s) /\ (* then the ATC are the same *)
     (tl ns@1 = s@1) /\  (* and ns@1 grows s@1 by 1 edge *)
-    ((forall e, In e s@1 -> In e D) -> (forall e, In e ns@1 -> In e D)). (* every edge is in D *)
+    ((forall e, In e (tl (rev s@1)) -> In e D) -> 
+     (forall e, In e (tl (rev ns@1)) -> In e D)). (* every edge is in D *)
 Proof. intros s ns D H1 H2. unfold step_states in H1.
     destruct (s @1) eqn: H_s. 
     {contradiction. } 
@@ -558,9 +574,17 @@ Proof. intros s ns D H1 H2. unfold step_states in H1.
         split. * reflexivity.
         split. * auto.
             * intros H_s_in_D e0 H_e_in_path. simpl in H_e_in_path.
-            destruct H_e_in_path. {hammer. }
-            destruct H0.          {hammer. }
-                                  {hammer. }
+            {
+            simpl in *.
+            destruct (rev l ++ [e]).
+            - auto.
+            - simpl in *. 
+            apply in_app_or in H_e_in_path.
+            destruct H_e_in_path.
+                + auto.
+                + simpl in *. assert (H2 : n_e = e0) by tauto. rewrite <- H2.
+                clear H_s_in_D H0 H2 H1. hammer. 
+            }
         + contradiction.
     - destruct (if_on_next_taxiway s n_e) eqn: H_on_next.
         + simpl in H3_2. destruct H3_2.
@@ -572,10 +596,19 @@ Proof. intros s ns D H1 H2. unfold step_states in H1.
                     rewrite <- H_on_next. simpl. rewrite <- app_assoc. split.
                     - auto.
                     split.
-                        * auto.
-                        * intros H_s_in_D e0 H_e_in_path. simpl in H_e_in_path.
-                        destruct H_e_in_path. {hammer. }
-                                              {hammer. }
+                        + auto.
+                        + intros H_s_in_D e0 H_e_in_path. rewrite -> H_s in H_e_in_path.
+                        destruct (rev l) eqn : H2.
+                            * assert (H3 : l = []) by hammer.
+                            rewrite -> H3 in *. simpl in *. hammer.
+                            * rewrite -> H_s in *.                 
+                            rewrite -> tl_app in H_e_in_path.
+                            apply in_app_or in H_e_in_path.
+                            destruct H_e_in_path.
+                            { apply H_s_in_D. simpl. hammer. } 
+                            { simpl in *. assert(H4: n_e = e0) by tauto. rewrite <- H4. 
+                            clear - H3_1. hammer. }
+                            { hammer. }
                 }
             * contradiction.
         + contradiction.
@@ -613,9 +646,6 @@ Proof. intros.
     apply step_states_grow_path_by_1_alt with (ns := ns) (D := D) in H.
     hammer. hammer.
 Qed.
-
-(* add this corollary to hint base *)
-Hint Immediate step_states_new_path_not_empty.
 
 (*
     find_path_aux_follow_atc proves that the result of find_path_aux follows ATC command
@@ -675,52 +705,50 @@ Proof. intro rb. induction rb as [| rb' IHrb].
         {rewrite -> H_path_not_empty. discriminate. }
 Qed.
 
-
 (* 
     the top level theorem of that output follows ATC command
     we manually enforce ATC = atc_h :: atc_t, which means ATC command is non-empty,
-        if ATC is empty, the case is trivial since it won't run at all
+        if ATC is empty, the case is trivial because the output is empty
 *)
 Theorem output_path_follow_atc:
-    forall round_bound start_v end_v D (atc_h:string) (atc_t:list string) path,
-    In path (find_path_aux end_v D round_bound (State [(((start_v, input), (start_v, input)), atc_h)] atc_h atc_t []) ) ->
-    path_follow_atc path (atc_h::atc_t).
-Proof. intros rb start_v end_v D atc_h atc_t path H_path.
-    assert (H_atc_same: origin_atc (State [(((start_v, input), (start_v, input)), atc_h)] atc_h atc_t []) 
-                        = atc_h::atc_t) by auto.
-    rewrite <- H_atc_same.
-    apply find_path_aux_follow_atc with (end_v := end_v) (D := D) 
-                                    (hd := (((start_v, input), (start_v, input)), atc_h)) 
-                                    (tl := []) (rb := rb).
-    - auto.
-    - auto.
-    - unfold state_follow_atc. simpl. reflexivity.
-    - auto.
-Qed.
-
+    forall start_v end_v ATC D (path : list Edge_type) (paths : list (list Edge_type)),
+    Some paths = (find_path (start_v : Vertex) (end_v : Vertex) (ATC : list string) (D : Graph_type)) ->
+    In path paths ->
+    path_follow_atc path ATC.
+Proof.
+aux_to_output find_path_aux_follow_atc.
+assert(H1 : origin_atc init_s = ATC_h :: ATC_t) by auto.
+rewrite <- H1.
+apply find_path_aux_follow_atc with 
+    (end_v := end_v) (D := D) (hd := (start_v, input, (start_v, input), ATC_h)) (tl := []) (rb := 100).
+1-4: hammer.
+Qed. 
 
 
 (* ========== The path is a path in the graph ==========*)
 
-(* a lemma directly results from step_states_properties *)
+(* the edge that step_states adds to the path is in the graph *)
 Lemma step_states_new_edge_in_graph : forall s ns D,
     (s @1) <> [] -> In ns (step_states s D) -> 
-    ((forall e, In e s@1 -> In e D) -> (forall e, In e ns@1 -> In e D)).
+    ((forall e, In e (tl (rev s@1)) -> In e D) -> 
+     (forall e, In e (tl (rev ns@1)) -> In e D)).
 Proof. apply step_states_properties. Qed.
 
+(* if e is an input edge *)
+Definition is_input (e : Edge_type) : Prop := e.1.2.1 = input.
+
 (*
-    TODO: 
+    if cur_path is not empty, then 
 *)
-Theorem output_path_in_graph:
-    forall round_bound end_v D path (e : Edge_type) (s : State_type),
+Lemma find_path_aux_in_graph:
+    forall round end_v D path (s : State_type),
     s@1 <> [] -> (* s@1 is not empty *)
-    (forall c_e, In c_e s@1 -> In c_e D)  -> (* all but the first one in s@1 (cur_path) is in D *)
-    In path (find_path_aux end_v D round_bound s) ->
-    In e path ->
-    (forall n_e, In n_e path -> In n_e D). (* then all but the first one in n_s@1 (cur_path) is in D *)
+    (forall c_e, In c_e (tl (rev s@1)) -> In c_e D)  -> (* all but the first one in s@1 (cur_path) is in D *)
+    In path (find_path_aux end_v D round s) ->
+    (forall n_e, In n_e (tl path) -> In n_e D). (* then all but the first one in n_s@1 (cur_path) is in D *)
 Proof. intro rb. dependent induction rb.
 - intros. simpl in H0. contradiction.
-- intros e_v D path e s H_s1_not_empty H_s_in_D path_in_find_path e_in_path n_e H_n_e_in_path.
+- intros e_v D path s H_s1_not_empty H_s_in_D path_in_find_path n_e H_n_e_in_path.
     assert (s1_not_empty: exists s1_hd s1_tl, s@1 = s1_hd::s1_tl).
     {destruct s@1. -contradiction. -eauto.  }
     destruct_conjs. rename s1_not_empty into s1_hd. rename H into s1_tl. rename H0 into H_s1.
@@ -731,25 +759,44 @@ Proof. intro rb. dependent induction rb.
             unpack_if_reach_endpoint H_if_end H_s1 H_end H_s3_empty.
             simpl in *. assert(Hpath : rev s @1 = path) by tauto. clear path_in_find_path_l.
             rewrite <- Hpath in H_n_e_in_path.
-            assert(H_n_e_in_path_equiv: In n_e (s @1)). 
-            {rewrite <- in_rev in H_n_e_in_path. assumption. }
-            auto.
+            apply H_s_in_D in H_n_e_in_path.
+            assumption.
             * (* not reach endpoint *) contradiction.
         + (* right part of find_path *)
         split_in_flat_map path_in_find_path_r n_s H3 H4.
-            apply IHrb with (end_v := e_v)  (path := path) (s := n_s) (e := n_e).  
+            apply IHrb with (end_v := e_v)  (path := path) (s := n_s).  
             * fold find_path_aux in H4. apply step_states_grow_path_by_1 in H3.
             destruct n_s @1 as [| n_path'] eqn: H_n_s1. 
                 {auto. } 
                 {congruence. }
             rewrite -> H_s1. congruence.
-            * {intros n_e' H_n_e'. (* n_e' is any edge in n_s *)
-            fold find_path_aux in H4.
-            apply step_states_new_edge_in_graph with (s:=s) (ns:=n_s).
-            1-4:auto. }
+            * {
+                intros n_e' H_n_e'. (* n_e' is any edge in n_s *)
+                fold find_path_aux in H4.
+                apply step_states_new_edge_in_graph with (s:=s) (ns:=n_s).
+                1-4:auto.
+                }
             1-3:auto.
 Qed.
 
+
+Theorem output_path_in_graph : 
+    forall start_v end_v ATC D (path : list Edge_type) (paths : list (list Edge_type)),
+    Some paths = (find_path (start_v : Vertex) (end_v : Vertex) (ATC : list string) (D : Graph_type)) ->
+    In path paths ->
+    exists ATC_h, hd_error ATC = Some ATC_h ->
+    (forall n_e, In n_e (tl path) -> In n_e D).
+Proof.  aux_to_output find_path_aux_starts_with_s1.
+exists ATC_h. intros.
+pose (D' := (((start_v, input), (start_v, input), ATC_h)::D)).
+apply find_path_aux_in_graph with (end_v := end_v) (D := D) 
+                                  (s := init_s) (round := 100) (path := path).
+    + auto.
+    + hammer.
+    + assert (H_temp : paths = (find_path_aux end_v D 100 init_s)) by hammer.
+    +  rewrite <- H_temp. assumption.
+    + assumption.
+Qed.
 
 (* ========== The path starts at the input start node ==========*)
 
@@ -803,11 +850,8 @@ Proof. intros. destruct path as [ | p_hd p_tl] eqn: H_p.
     - exists p_hd. exists p_tl. reflexivity.
 Qed.
 
-(* 
-    Top-level theorem for the result of find_path always starts from input edge
-    Note that the result of find_path returns in normal order
-*)
-Theorem output_path_start_correct:
+(* direct consequence of applying the lemma *)
+Lemma output_path_start_correct_alt:
     forall start_v end_v ATC D (path : list Edge_type) (paths : list (list Edge_type)),
     Some paths = (find_path (start_v : Vertex) (end_v : Vertex) (ATC : list string) (D : Graph_type)) ->
     In path paths ->
@@ -816,6 +860,29 @@ Theorem output_path_start_correct:
 Proof. 
     aux_to_output find_path_aux_starts_with_s1.
 Qed.
+
+
+(* 
+    Top-level theorem for the result of find_path always starts from input edge
+    Note that every path returned by find_path is in normal order
+*)
+Theorem output_path_start_correct:
+    forall start_v end_v ATC D (path : list Edge_type) (paths : list (list Edge_type)),
+    Some paths = (find_path (start_v : Vertex) (end_v : Vertex) (ATC : list string) (D : Graph_type)) ->
+    In path paths ->
+    (* last edge in path is ((start_v, input), (start_v, input), taxiway_name) *)
+    exists taxiway_name, exists l,  path = ((start_v, input), (start_v, input), taxiway_name)::l.
+Proof.
+    intros.
+    assert (H1: exists taxiway_name, exists l,  rev path = l ++ [((start_v, input), (start_v, input), taxiway_name)]).
+    { apply output_path_start_correct_alt with (end_v := end_v) (ATC := ATC) (D := D) (path := path) (paths := paths).
+    1-2: assumption. }
+    destruct H1 as [taxiway_name H1]. destruct H1 as [l H1].
+    exists taxiway_name. exists (rev l).
+    clear - H1. hammer.
+Qed.
+
+
 
 (* ========== The path ends at the input end node ==========*)
 
@@ -875,9 +942,24 @@ Proof.
     aux_to_output find_path_aux_end_correct.
 Qed.
 
+Theorem Soundness:
+    forall start_v end_v ATC D (path : list Edge_type) (paths : list (list Edge_type)),
+    Some paths = (find_path (start_v : Vertex) (end_v : Vertex) (ATC : list string) (D : Graph_type)) ->
+    In path paths ->
+    path_conn (rev path) /\
+    path_follow_atc path ATC /\
+    (exists taxiway_name, exists l,  path = ((start_v, input), (start_v, input), taxiway_name)::l) /\
+
+
 
 
 (* ========== Correctness ========== *)
 
 (* TODO: a wrapper here *)
 
+(* TODO: lift theorem to undirected graph *)
+
+(* 
+    In naive_path (find_path_undirected naive_graph) 
+    -> P naive_path
+*)
