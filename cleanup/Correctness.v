@@ -101,16 +101,18 @@ Ltac aux_to_output lemma :=
     destruct ATC as [|ATC_h ATC_t] eqn:H_ATC;
     [inversion H |
         pose (init_s := (State [(start_v, input, (start_v, input), ATC_h)] ATC_h ATC_t []));
-        assert (H_init_s_not_empty : init_s @1 <> []) by hammer; (* {simpl. congruence. } *)
         try (
-            apply lemma with
-            (round := 100) (end_v := end_v) (D := D) (path := path) (s := init_s) in H_init_s_not_empty;
-            repeat hammer
-        );
-        try (
-            apply lemma with
-            (round := 100) (end_v := end_v) (D := D) (path := path) (s := init_s);
-            repeat hammer
+            assert (H_init_s_not_empty : init_s @1 <> []) by hammer; (* {simpl. congruence. } *)
+            try (
+                apply lemma with
+                (round := 100) (end_v := end_v) (D := D) (path := path) (s := init_s) in H_init_s_not_empty;
+                repeat hammer
+            );
+            try (
+                apply lemma with
+                (round := 100) (end_v := end_v) (D := D) (path := path) (s := init_s);
+                repeat hammer
+            )
         )   
     ].
 
@@ -779,15 +781,14 @@ Proof. intro rb. dependent induction rb.
             1-3:auto.
 Qed.
 
-
+(* every edge in path given by find_path is in the input graph*)
 Theorem output_path_in_graph : 
     forall start_v end_v ATC D (path : list Edge_type) (paths : list (list Edge_type)),
     Some paths = (find_path (start_v : Vertex) (end_v : Vertex) (ATC : list string) (D : Graph_type)) ->
     In path paths ->
-    exists ATC_h, hd_error ATC = Some ATC_h ->
     (forall n_e, In n_e (tl path) -> In n_e D).
 Proof.  aux_to_output find_path_aux_starts_with_s1.
-exists ATC_h. intros.
+intros.
 pose (D' := (((start_v, input), (start_v, input), ATC_h)::D)).
 apply find_path_aux_in_graph with (end_v := end_v) (D := D) 
                                   (s := init_s) (round := 100) (path := path).
@@ -929,7 +930,7 @@ Proof. intro round. dependent induction round.
 Qed.
 
 (* 
-    Top-level theorem for the result of find_path always ends at end_v input
+    Top-level theorem for every path returned by find_path always ends at end_v
     Note that the result of find_path returns in normal order
 *)
 Theorem output_path_end_correct:
@@ -942,16 +943,35 @@ Proof.
     aux_to_output find_path_aux_end_correct.
 Qed.
 
-Theorem Soundness:
+
+
+Theorem correctness:
     forall start_v end_v ATC D (path : list Edge_type) (paths : list (list Edge_type)),
     Some paths = (find_path (start_v : Vertex) (end_v : Vertex) (ATC : list string) (D : Graph_type)) ->
     In path paths ->
+
     path_conn (rev path) /\
     path_follow_atc path ATC /\
+    (forall n_e, In n_e (tl path) -> In n_e D) /\
     (exists taxiway_name, exists l,  path = ((start_v, input), (start_v, input), taxiway_name)::l) /\
+    (exists end_edge, ((hd_error (rev path)) = Some end_edge) /\ end_edge.1.2.1 = end_v).
+Proof. intros.
+(* this tactic applys coresp thm to current goal and finds hypothesis for the theorem *)
+(* Ltac app_thm thm start_v end_v ATC D path paths := 
+    apply (thm start_v end_v ATC D path paths); (repeat assumption). *)
+Ltac temp_tac thm start_v end_v ATC D path paths :=
+    let app_thm := (apply (thm start_v end_v ATC D path paths); (repeat assumption)) in
+        match goal with
+        | [ |- _ /\ _] => split; [app_thm | ]
+        | _ =>  app_thm 
+        end.
 
-
-
+temp_tac output_path_conn start_v end_v ATC D path paths.
+temp_tac output_path_follow_atc start_v end_v ATC D path paths.
+temp_tac output_path_in_graph start_v end_v ATC D path paths.
+temp_tac output_path_start_correct start_v end_v ATC D path paths.
+temp_tac output_path_end_correct start_v end_v ATC D path paths.
+Qed.
 
 (* ========== Correctness ========== *)
 
