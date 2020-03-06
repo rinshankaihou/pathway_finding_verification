@@ -19,17 +19,17 @@ Require Import Coq.Program.Tactics.
 From Taxiway Require Import Types.
 From Taxiway Require Import Example.
 
-Definition arc_inv (arc : Arc_type) : Arc_type := 
-    ((arc.1.2, arc.1.1), arc.2).
+Definition Edge_inv (edge : Edge_type) : Edge_type := 
+    ((edge.1.2, edge.1.1), edge.2).
 
 Definition undirect_to_bidirect (ng : N_Graph_type) : N_Graph_type := 
-    filter (fun x => negb (eqv x.1.1 input)) (flat_map (fun arc => [arc; arc_inv arc]) ng).
+    filter (fun x => negb (eqv x.1.1 input)) (flat_map (fun edge => [edge; Edge_inv edge]) ng).
 
-Definition previous_arcs (cur : Arc_type) (ng : N_Graph_type) : list Arc_type :=
+Definition previous_edges (cur : Edge_type) (ng : N_Graph_type) : list Edge_type :=
     filter (fun x => (eqv x.1.1 cur.1.2) && negb (eqv x.1.2 cur.1.1)) ng.
 
-Definition generate_edges (ng : N_Graph_type) (arc : Arc_type) : list Edge_type :=
-    map (fun x => ((x.1, arc.1), arc.2)) (previous_arcs arc ng).
+Definition generate_edges (ng : N_Graph_type) (edge : Edge_type) : list edge_type :=
+    map (fun x => ((x.1, edge.1), edge.2)) (previous_edges edge ng).
 
 Definition to_C (ng : N_Graph_type) : C_Graph_type :=
     flat_map (generate_edges (undirect_to_bidirect ng)) (undirect_to_bidirect ng).

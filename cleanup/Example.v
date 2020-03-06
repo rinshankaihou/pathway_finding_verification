@@ -106,7 +106,7 @@ Example eg_find_path_aux_3 : find_path Ch AA3 [C;B;A] ann_arbor =
     Some ([[(((Ch, input), (Ch, input)), C); (((Ch, input), (BC, Ch)), C); (((BC, Ch), (AB, BC)), B); (((AB, BC), (AA3, AB)), A)]]).
 Proof. reflexivity. Qed.
 
-(* It works as expected because AA3 is not a input, so there's no edge from (AA3, input)*)    
+(* It works as expected because AA3 is not a input, so there's no arc from (AA3, input)*)    
 Example eg_find_path_aux_4 : find_path AA3 AA1 [A;B;C;A] ann_arbor = 
     Some ([]).
 Proof. reflexivity. Qed. 

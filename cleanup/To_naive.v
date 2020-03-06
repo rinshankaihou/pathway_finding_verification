@@ -30,9 +30,9 @@ Definition dec_Node_Type : forall (a b : Node_type), {a = b} + {a <> b}.
 Proof. intros. Admitted.
 
 Definition dec_Arc : forall (a b : Arc_type), {a = b} + {a <> b}.
-Proof. intros. Print C_Edge_type. Admitted.
+Proof. intros. Print Arc_type. Admitted.
 
-Definition to_N (le : list Edge_type) : list Arc_type := 
+Definition to_N (le : list Arc_type) : list Edge_type := 
     nodup dec_Arc (map (fun ce => (ce.1.2, ce.2)) le).
 
 Eval compute in to_N [(((Ch, BC), (Ch, AA3)), B); (((Ch, BC), (Ch, AA3)), B)].
