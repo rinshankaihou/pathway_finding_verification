@@ -1,9 +1,0 @@
-Ch,Input/Output,BC via C
-A3r,Input/Output,AA3 via A3
-A2r,Input/Output,AB via A2
-A1r,Input/Output,AA1 via A1
-AA3,Intersection,A3r via A3,AB via A
-AB,Intersection,A2r via A2,AA3 via A,BC via B,AC via A
-AC,Intersection,AA1 via A,BC via C,AB via A
-AA1,Intersection,A1r via A1,AC via A
-BC,Intersection,Ch via C,AC via C,AB via B

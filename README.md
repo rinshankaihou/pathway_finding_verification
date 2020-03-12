@@ -1,12 +1,35 @@
 # Dependency
-CoqHammer with at least Vampire and Eprover installed. (Otherwise trust the hammer tactic works at its every occurrence) https://github.com/princeton-vl/CoqGym/tree/master/ASTactic/coqhammer
+coqc 8.10.1 (Feb 2020) with Ocaml 4.07.1
 
-mathcomp.
 
-# Algorithm
-The current algorithm is in https://github.com/rinshankaihou/pathway_finding_ver/blob/master/GraphBasics/dfs_complete_paper.v.
+CoqHammer 1.1.1. (Otherwise trust the hammer tactic works at its every occurrence) https://github.com/princeton-vl/CoqGym/tree/master/ASTactic/coqhammer
+
+CoqHammer requires 4 ATPs, the versions we are using are:
+   
+      CVC4 1.7
+      Z3_tptp 4.8.8.0
+      vampire 4.2.2
+      Eprover 2.4
+
+mathcomp-ssreflect 1.10.0.
+
+# File Organization
+The algorithm is implemented in *Implementation.v*. 
+Type definitions are in *Type.v*. Some examples on the Ann Arbor airport is in *Example.v*. Run *Extraction.v* to extract the algorithm to Ocaml.
+
 Top level function: find_path_wrapper.
 
+# Correctness
+We prove correctness of the algorithm in
+If I get a result for an ATC instruction, then this result is valid. For example, if the ATC instruction is “ACB”, the result I get is:
+   1. correct start & end points; 
+   2. valid path in the graph; ( *find_path_conn* )
+   3. its ‘signature’ is of the form A+C+B+. (*output_path_follow_atc*)
+   4. every edge is in the graph.
+   
+The proof is in *correctness.v*, top level theorem is *corectness*.
+
+# Reference
 Definitions and Conventions:
 
      Vertex: index nat
@@ -35,28 +58,3 @@ Definitions and Conventions:
     start_v, end_v: starting/ending vertex
     
     [(((start_v, input), (start_v, input)), atc_h)]: initial cur_path with one edge
-
-
-# Specification
-1. If I get a result for an ATC instruction, then this result is valid. For example, if the ATC instruction is “ACB”, the result I get is:
-   1. correct start & end points; 
-   2. valid path in the graph; ( *find_path_conn* )(**DONE**)
-   3. its ‘signature’ is of the form A+C+B+. (*output_path_follow_atc*)(**DONE**)
-   4. every edge is in the graph.
-
-2. If the algorithm is returning a result, there is no other valid result. (completeness)
-3. If a taxiway is too small for the aircraft, then not part of the result should include this taxiway.
-
-# Notes
-Thoughts for completeness. WTS: for (p: Path), SomeProp p -> In p output.
-Then this SomeProp guarantees a program execution path that produces p. 
-
-Consider using reflection since our soundness spec sounds very deterministic.
-https://softwarefoundations.cis.upenn.edu/vfa-current/Decide.html
-
-# ToDo
-1. Admire Ke Du
-2. Write a wrapper for find_path (or further for the whole algorithm, it's similar), then 
-     - Check the ATC command is valid (i.e. not empty or in the graph... check later)
-     - Check the result has only one path (if exists), maybe write a new type for return
-3. edge in directed graph -> Arc_type, edge in undirected graph -> Edge_type
