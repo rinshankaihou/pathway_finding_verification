@@ -55,7 +55,7 @@ Consider using reflection since our soundness spec sounds very deterministic.
 https://softwarefoundations.cis.upenn.edu/vfa-current/Decide.html
 
 # ToDo
-1. Admire Ke Du
+1. Admire Siyuan.
 2. Write a wrapper for find_path (or further for the whole algorithm, it's similar), then 
      - Check the ATC command is valid (i.e. not empty or in the graph... check later)
      - Check the result has only one path (if exists), maybe write a new type for return
