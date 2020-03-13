@@ -19,13 +19,17 @@ Type definitions are in *Type.v*. Some examples on the Ann Arbor airport is in *
 
 Top level function: find_path_wrapper.
 
+We provide a ```makefile```. Note that *Extraction.v* is not included in the make list, so you have to manually run it.
+   - ```make```: compile all targets
+   - ```make clean```: delete compiled files and temporary files
+
 # Correctness
 We prove correctness of the algorithm in
 If I get a result for an ATC instruction, then this result is valid. For example, if the ATC instruction is “ACB”, the result I get is:
-   1. correct start & end points; 
+   1. correct start & end points; (*output_path_start_correct*; *output_path_end_correct*)
    2. valid path in the graph; ( *find_path_conn* )
    3. its ‘signature’ is of the form A+C+B+. (*output_path_follow_atc*)
-   4. every edge is in the graph.
+   4. every edge is in the graph. (*output_path_in_graph*)
    
 The proof is in *correctness.v*, top level theorem is *corectness*.
 
