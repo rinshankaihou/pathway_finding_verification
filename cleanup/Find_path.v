@@ -19,23 +19,23 @@ From Taxiway Require Export Types.
 (* ============ comparision functions ============*)
 
 (*
-    check whether the Arc e is on the next ATC command in state cur_s
+    check whether the Arc arc is on the next ATC command in state cur_s
 *)
-Definition if_on_next_taxiway (cur_s : State_type) (e : Arc_type) : bool :=
+Definition if_on_next_taxiway (cur_s : State_type) (arc :  Arc_type) : bool :=
     match hd_error cur_s@3 with
     | None => false
-    | Some t => t =? e.2
+    | Some t => t =? arc.2
     end.
 
 (*
-    check whether the Arc e is on current taxiway of state cur_s
+    check whether the Arc arc is on current taxiway of state cur_s
 *)
-Definition if_on_current_taxiway (cur_s : State_type) (e : Arc_type) : bool :=
-    cur_s@2 =? e.2.
+Definition if_on_current_taxiway (cur_s : State_type) (arc :  Arc_type) : bool :=
+    cur_s@2 =? arc.2.
 
-Lemma on_current_taxiway_lemma : forall (s:State_type) (e:Arc_type), 
-    if_on_current_taxiway s e -> (e.2 =? s@2).
-Proof. intros s e H. unfold if_on_current_taxiway in H. 
+Lemma on_current_taxiway_lemma : forall (s:State_type) (arc:Arc_type), 
+    if_on_current_taxiway s arc -> (arc.2 =? s@2).
+Proof. intros s arc H. unfold if_on_current_taxiway in H. 
     rewrite -> String.eqb_sym. assumption. Qed.
 
 (*
@@ -44,14 +44,14 @@ Proof. intros s e H. unfold if_on_current_taxiway in H.
 Definition if_reach_endpoint (cur_s : State_type) (end_v : Vertex) : bool :=
     match hd_error cur_s@1 with
     | None => false (*will never reach*)
-    | Some e => (eqv e.1.2.1 end_v) && (eqn (List.length cur_s@3) 0)
+    | Some arc => (eqv arc.1.2.1 end_v) && (eqn (List.length cur_s@3) 0)
     end.  
 
 (*
     check whether an Arc starts from current node
 *)
-Definition next_Arcs (current : Node_type) (e : Arc_type) : bool :=
-    (eqv current.1 e.1.1.1) && (eqv current.2 e.1.1.2).
+Definition next_Arcs (current : Node_type) (arc :  Arc_type) : bool :=
+    (eqv current.1 arc.1.1.1) && (eqv current.2 arc.1.1.2).
 
 (* ============ find Arcs ============*)
 
@@ -64,16 +64,16 @@ Definition find_Arc (current : Node_type) (D : C_Graph_type) : list Arc_type :=
 (* ============ step functions ============*)
 
 (*
-    step_state_by_e takes a state and an Arc as input,
-        it checks whether the Arc e is valid for next step,
+    step_state_by_arc takes a state and an Arc as input,
+        it checks whether the Arc arc is valid for next step,
         if is valid return a list of one corresponding state,
         if not, return an empty list
 *)
-Definition step_state_by_e (cur_s : State_type) (e : Arc_type) : list State_type :=
-    if if_on_current_taxiway cur_s e
-    then [State (e::cur_s@1) cur_s@2 cur_s@3 cur_s@4]
-    else if if_on_next_taxiway cur_s e (* on the next taxiway *)
-        then [State (e::cur_s@1) e.2 (tail cur_s@3) (cur_s@2 :: cur_s@4)]
+Definition step_state_by_arc (cur_s : State_type) (arc :  Arc_type) : list State_type :=
+    if if_on_current_taxiway cur_s arc
+    then [State (arc::cur_s@1) cur_s@2 cur_s@3 cur_s@4]
+    else if if_on_next_taxiway cur_s arc (* on the next taxiway *)
+        then [State (arc::cur_s@1) arc.2 (tail cur_s@3) (cur_s@2 :: cur_s@4)]
         else [].
 
 
@@ -86,7 +86,7 @@ Definition step_state_by_e (cur_s : State_type) (e : Arc_type) : list State_type
 Definition step_states (cur_s : State_type) (D : C_Graph_type) : list State_type :=
     match hd_error cur_s@1 with
     | None => []
-    | Some e => flat_map (step_state_by_e cur_s) (find_Arc e.1.2 D)
+    | Some arc => flat_map (step_state_by_arc cur_s) (find_Arc arc.1.2 D)
     end.
 
 

@@ -166,7 +166,7 @@ Proof. intros ns s D IH H. unfold step_states in H. unfold hd_error in H.
     destruct s@1 as [| path_hd path_tail] eqn:Hpath.
     - simpl in H. contradiction.
     - apply in_flat_map in H. elim H. intros n_Arc H2. destruct H2 as [H2 H3].
-        unfold step_state_by_e in H3. 
+        unfold step_state_by_arc in H3. 
         unfold if_on_current_taxiway in H3.
         destruct (s@2 =? n_Arc.2) eqn:Heqn.
         + (* n_Arc on this taxiway *) 
@@ -477,7 +477,7 @@ Proof. intros s D n_s hd tl Hpath Hhd H1 H2.
     rewrite -> Hpath in H2.
     simpl.
     apply in_flat_map in H2. destruct H2. destruct H as [H2 H3].
-    unfold step_state_by_e in H3. destruct (if_on_current_taxiway s x) eqn: H_on_this_taxi.
+    unfold step_state_by_arc in H3. destruct (if_on_current_taxiway s x) eqn: H_on_this_taxi.
     + (* on_this_taxiway *)  
         simpl in H3. destruct H3.
         * unfold state_follow_atc in H1. 
@@ -551,7 +551,7 @@ Qed.
 
 (* every Arc except for the first Arc (input Arc, hardcoded in init_state) is in D *)
 Definition path_in_graph (path : list Arc_type) (D : list Arc_type) : Prop :=
-    forall e, In e (tl (path)) -> In e D.
+    forall a, In a (tl (path)) -> In a D.
 (*
     step_states_properties proves the step_states preserves invarient,
         if we go one step from s to ns, then:
@@ -570,7 +570,7 @@ Proof. intros s ns D H1 H2. unfold step_states in H1.
     {contradiction. } 
     unfold step_states in H2. rewrite H_s in H2. simpl in H2.
     split_in_flat_map H2 n_e H3_1 H3_2.
-    unfold step_state_by_e in H3_2. 
+    unfold step_state_by_arc in H3_2. 
     destruct (if_on_current_taxiway s n_e).
     - simpl in H3_2. destruct H3_2.
         + unfold origin_atc. rewrite <- H. rewrite -> H_s. 
@@ -578,7 +578,7 @@ Proof. intros s ns D H1 H2. unfold step_states in H1.
         split. * auto.
             * intros H_s_in_D e0 H_e_in_path. simpl in *.
             {
-            destruct (rev l ++ [e]).
+            destruct (rev l ++ [a]).
             - auto.
             - simpl in *. 
             apply in_app_or in H_e_in_path.
@@ -637,7 +637,7 @@ intros. assert (H1 : tl ns @1 = s @1). {
 } 
 destruct ns@1 eqn: H_ns.
     - hammer.
-    - exists e. simpl in H1. rewrite <- H1. reflexivity.
+    - exists a. simpl in H1. rewrite <- H1. reflexivity.
 Qed.
 
 (* since each time we adds one Arc, so it can't be empty*)
@@ -732,12 +732,12 @@ Qed.
 (* the Arc that step_states adds to the path is in the graph *)
 Lemma step_states_new_Arc_in_graph : forall s ns D,
     (s @1) <> [] -> In ns (step_states s D) -> 
-    ((forall e, In e (tl (rev s@1)) -> In e D) -> 
-     (forall e, In e (tl (rev ns@1)) -> In e D)).
+    ((forall a, In a (tl (rev s@1)) -> In a D) -> 
+     (forall a, In a (tl (rev ns@1)) -> In a D)).
 Proof. apply step_states_properties. Qed.
 
-(* if e is an input Arc *)
-Definition is_input (e : Arc_type) : Prop := e.1.2.1 = input.
+(* if a is an input Arc *)
+Definition is_input (a : Arc_type) : Prop := a.1.2.1 = input.
 
 (*
     if cur_path is not empty, then 
@@ -750,30 +750,30 @@ Lemma find_path_aux_in_graph:
     path_in_graph path D. (* then all but the first one in n_s@1 (cur_path) is in D *)
 Proof. intro rb. dependent induction rb.
 - intros. simpl in H0. contradiction.
-- intros e_v D path s H_s1_not_empty H_s_in_D path_in_find_path n_e H_n_e_in_path.
+- intros a_v D path s H_s1_not_empty H_s_in_D path_in_find_path n_a H_n_a_in_path.
     assert (s1_not_empty: exists s1_hd s1_tl, s@1 = s1_hd::s1_tl).
     {destruct s@1. -contradiction. -eauto.  }
     destruct_conjs. rename s1_not_empty into s1_hd. rename H into s1_tl. rename H0 into H_s1.
     unpack_find_path_aux_in_H path_in_find_path path_in_find_path_l path_in_find_path_r.
         + (* left part of find_path*)
-        destruct (if_reach_endpoint s e_v) eqn: H_if_end.
+        destruct (if_reach_endpoint s a_v) eqn: H_if_end.
             * (* reach endpoint *)
             unpack_if_reach_endpoint H_if_end H_s1 H_end H_s3_empty.
             simpl in *. assert(Hpath : rev s @1 = path) by tauto. clear path_in_find_path_l.
-            rewrite <- Hpath in H_n_e_in_path.
-            apply H_s_in_D in H_n_e_in_path.
+            rewrite <- Hpath in H_n_a_in_path.
+            apply H_s_in_D in H_n_a_in_path.
             assumption.
             * (* not reach endpoint *) contradiction.
         + (* right part of find_path *)
         split_in_flat_map path_in_find_path_r n_s H3 H4.
-            apply IHrb with (end_v := e_v)  (path := path) (s := n_s).  
+            apply IHrb with (end_v := a_v)  (path := path) (s := n_s).  
             * fold find_path_aux in H4. apply step_states_grow_path_by_1 in H3.
             destruct n_s @1 as [| n_path'] eqn: H_n_s1. 
                 {auto. } 
                 {congruence. }
             rewrite -> H_s1. congruence.
             * {
-                intros n_e' H_n_e'. (* n_e' is any Arc in n_s *)
+                intros n_a' H_n_a'. (* n_e' is any Arc in n_s *)
                 fold find_path_aux in H4.
                 apply step_states_new_Arc_in_graph with (s:=s) (ns:=n_s).
                 1-4:auto.
