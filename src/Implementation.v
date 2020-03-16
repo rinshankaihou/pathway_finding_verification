@@ -93,7 +93,7 @@ Definition step_states (cur_s : State_type) (D : Graph_type) : list State_type :
 (* ============ main functions ============*)
 
 (*
-    find_path_aux takes an endpoint, a graph, round bound and a state,
+    find_path_aux takes an endpoint, a graph, bound and a state,
         it will return a list of possible paths
     
     find_path_aux first checks whether state reaches endpoint,
@@ -101,10 +101,10 @@ Definition step_states (cur_s : State_type) (D : Graph_type) : list State_type :
         then recursive on all states returned
 
     find_path_aux may return zero or more than one path,
-        it requires a sufficient large round bound
+        it requires a sufficient large bound
 *)
-Fixpoint find_path_aux (end_v : Vertex) (D : Graph_type) (round_bound : nat) (cur_s : State_type) : list (list Edge_type) :=
-    match round_bound with
+Fixpoint find_path_aux (end_v : Vertex) (D : Graph_type) (bound : nat) (cur_s : State_type) : list (list Edge_type) :=
+    match bound with
     | 0 => []
     | S n =>
         (if if_reach_endpoint cur_s end_v  (*reach endpoint*)

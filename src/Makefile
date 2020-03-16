@@ -5,6 +5,7 @@ clean: Makefile.coq
 	+make -f Makefile.coq clean
 	rm -f Makefile.coq
 	rm -f Makefile.coq.conf
+	rm -f .*.aux
 
 Makefile.coq: Make
 	$(COQBIN)coq_makefile -f Make -o Makefile.coq
