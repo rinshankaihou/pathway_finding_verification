@@ -3,9 +3,10 @@ all: Makefile.coq
 
 clean: Makefile.coq
 	+make -f Makefile.coq clean
-	rm -f .*.aux
 	rm -f Makefile.coq
 	rm -f Makefile.coq.conf
+	rm -f .*.aux
+	rm -f *.glob
 
 Makefile.coq: Make
 	$(COQBIN)coq_makefile -f Make -o Makefile.coq
