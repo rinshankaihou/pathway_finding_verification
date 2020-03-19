@@ -1,5 +1,6 @@
 # Dependency
 CoqHammer with at least Vampire and Eprover installed. (Otherwise trust the hammer tactic works at its every occurrence) https://github.com/princeton-vl/CoqGym/tree/master/ASTactic/coqhammer
+   - Note that in the experiment, there's a strange case if your laptop is using battery without power connected, the hammer may fail.
 
 mathcomp.
 
