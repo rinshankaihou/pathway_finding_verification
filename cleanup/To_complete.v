@@ -17,7 +17,7 @@ Require Import Arith.
 Require Import Coq.Program.Tactics.
 
 From Taxiway Require Import Types.
-From Taxiway Require Import Example.
+From Taxiway Require Import Example. 
 
 Definition Edge_inv (edge : Edge_type) : Edge_type := 
     ((edge.1.2, edge.1.1), edge.2).
@@ -28,7 +28,7 @@ Definition undirect_to_bidirect (ng : N_Graph_type) : N_Graph_type :=
 Definition previous_edges (cur : Edge_type) (ng : N_Graph_type) : list Edge_type :=
     filter (fun x => (eqv x.1.1 cur.1.2) && negb (eqv x.1.2 cur.1.1)) ng.
 
-Definition generate_edges (ng : N_Graph_type) (edge : Edge_type) : list edge_type :=
+Definition generate_edges (ng : N_Graph_type) (edge : Edge_type) : list Arc_type :=
     map (fun x => ((x.1, edge.1), edge.2)) (previous_edges edge ng).
 
 Definition to_C (ng : N_Graph_type) : C_Graph_type :=
@@ -38,20 +38,20 @@ Definition to_C (ng : N_Graph_type) : C_Graph_type :=
 (*
     A testcase for the to_C function on ann arbor case.
 *)
-(* Definition eqe (e1 :Edge_type) (e2:Edge_type) : bool :=
+(* Definition eqe (e1 :Arc_type) (e2:Arc_type) : bool :=
     (eqv e1.1.1.1 e2.1.1.1) &&
     (eqv e1.1.1.2 e2.1.1.2) &&
     (eqv e1.1.2.1 e2.1.2.1) &&
     (eqv e1.1.2.2 e2.1.2.2) &&
     (e1.2 =? e2.2).
 
-Fixpoint in_list_b (e : Edge_type) (le : list Edge_type) : bool :=
+Fixpoint in_list_b (e : Arc_type) (le : list Arc_type) : bool :=
     match le with
     | [] => false
     | h::t => if eqe h e then true else in_list_b e t
     end.
 
-Fixpoint two_list_inclusion (l1 : list Edge_type) (l2 : list Edge_type) : bool :=
+Fixpoint two_list_inclusion (l1 : list Arc_type) (l2 : list Arc_type) : bool :=
     match l1 with
     | [] => true
     | h::t => (in_list_b h l2) && two_list_inclusion t l2

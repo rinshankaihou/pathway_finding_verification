@@ -14,27 +14,75 @@ Require Import Arith.
 Require Import Coq.Program.Tactics.
 
 From Taxiway Require Import Types.
-From Taxiway Require Import Example.
+(* From Taxiway Require Import Example. *)
 
 From Hammer Require Import Hammer.
 (* ========== downward function ========== *)
 Locate " {} + {}".
 
-Definition dec_Vertex_Type : forall (a b : Vertex), {a = b} + {a <> b}.
+(* Definition dec_Vertex_Type : forall (a b : Vertex), {a = b} + {a <> b}.
 Proof. intros. destruct (eqv a b) eqn : H.
+    - left. hammer.
+    - right. hammer.
+Defined. *)
+
+
+(* Definition eq_n (n1 : Node_type) (n2 : Node_type) : bool :=
+    (eqv n1.1 n2.1) && (eqv n1.2 n2.2).
+
+Lemma eqn_eq : 
+    forall n1 n2, (eq_n n1 n2 = true) <-> (n1=n2).
+Proof. intros. split.
+    - intros. unfold eq_n in H. hammer.
+    - hammer.
+Qed. *)
+
+
+(* Definition dec_Node_Type : forall (a b : Node_type), {a = b} + {a <> b}.
+Proof. intros. destruct (eq_n a b) eqn : H.
+    - left. hammer.
+    - right. hammer.
+Defined. *)
+
+(* Definition eq_a (a1 : Arc_type) (a2 : Arc_type) : bool :=
+    (eq_n a1.1.1 a2.1.1) && (eq_n a1.1.2 a2.1.2) && (a1.2 =? a2.2).
+
+Lemma eqa_eq :
+    forall a1 a2, (eq_a a1 a2 = true) <-> (a1=a2).
+Proof. intros. split.
+    - intros. unfold eq_a in H. hammer.
+    - intros. rewrite H. unfold eq_a. hammer.
+Qed.   
+
+
+Definition dec_Arc : forall (a b : Arc_type), {a = b} + {a <> b}.
+Proof. intros. destruct (eq_a a b) eqn :H.
+    - left. hammer.
+    - right. hammer.
+Defined. *)
+
+
+Definition eq_e (e1:Edge_type) (e2:Edge_type) : bool :=
+    (eqv e1.1.1 e2.1.1) && (eqv e1.1.2 e2.1.2) && (e1.2 =? e2.2).
+
+Lemma eqe_eq:
+    forall e1 e2, (eq_e e1 e2 = true) <-> (e1=e2).
+Proof. intros. split.
+    - intros. unfold eq_e in H. hammer.
+    - intros. rewrite H. unfold eq_e. hammer.
+Qed.
+
+Definition dec_Edge : forall (a b : Edge_type), {a = b} + {a <> b}.
+Proof. intros. destruct (eq_e a b) eqn :H.
     - left. hammer.
     - right. hammer.
 Defined.
 
-Definition dec_Node_Type : forall (a b : Node_type), {a = b} + {a <> b}.
-Proof. intros. Admitted.
 
-Definition dec_Arc : forall (a b : Arc_type), {a = b} + {a <> b}.
-Proof. intros. Print Arc_type. Admitted.
 
-Definition to_N (le : list Arc_type) : list Edge_type := 
-    nodup dec_Arc (map (fun ce => (ce.1.2, ce.2)) le).
+(* Definition to_N (le : list Arc_type) : list Edge_type := 
+    nodup dec_Edge (map (fun ce => (ce.1.2, ce.2)) le).
 
 Eval compute in to_N [(((Ch, BC), (Ch, AA3)), B); (((Ch, BC), (Ch, AA3)), B)].
 Example xm : to_N [(((Ch, BC), (Ch, AA3)), B); (((Ch, BC), (Ch, AA3)), B)] = [((Ch, AA3), B)].
-Proof. compute. reflexivity. Qed.
+Proof. compute. reflexivity. Qed. *)
