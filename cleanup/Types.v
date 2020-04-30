@@ -121,3 +121,9 @@ Example eg_state : State_type := State [] "2" ["3"; "4"] ["1"].
 Eval compute in  (eg_state@1, eg_state@2, eg_state@3, eg_state@4). 
 *)
 
+
+(* 
+    hardcoded input vertex. if a vertex is start_vertex in the naive graph, 
+    we encode input Node in the complete graph to be ((start_vertex, input), (start_vertex, input)) 
+*)
+Example input : Vertex := index 0.

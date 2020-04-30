@@ -17,12 +17,6 @@ From Taxiway Require Import Find_path.
 
 (* ============ vertex ============*)
 
-(* 
-    hardcoded input vertex. if a vertex is start_vertex in the naive graph, 
-    we encode input Node in the complete graph to be ((start_vertex, input), (start_vertex, input)) 
-*)
-Example input : Vertex := index 0.
-
 (* vertices in the naive graph, ARB *)
 Example AA3 : Vertex := index 1.
 Example AB := index 2.
