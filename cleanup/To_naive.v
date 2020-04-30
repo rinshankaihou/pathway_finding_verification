@@ -17,6 +17,7 @@ From Taxiway Require Import Types.
 (* From Taxiway Require Import Example. *)
 
 From Hammer Require Import Hammer.
+Hammer_cleanup.
 (* ========== downward function ========== *)
 Locate " {} + {}".
 

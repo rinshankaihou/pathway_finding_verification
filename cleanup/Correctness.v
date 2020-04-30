@@ -16,14 +16,15 @@ Import ListNotations.
 From Coq.Arith Require Import Arith EqNat.
 Open Scope string_scope.
 Open Scope list_scope.
-
-From Taxiway Require Import Types.
-From Taxiway Require Import Find_path.
 (*
     Hammer needs at least Vampire, CVC4 and Eprover installed
     We widely use hammer for trivial cases
 *)
 From Hammer Require Import Hammer.
+Hammer_cleanup.
+
+From Taxiway Require Import Types.
+From Taxiway Require Import Find_path.
 
 Require Import Coq.Program.Equality.
 Require Import Arith.

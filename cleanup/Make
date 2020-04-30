@@ -2,7 +2,7 @@
 
 Types.v
 Example.v
-To_naive.v
-To_complete.v
 Find_path.v
 Correctness.v
+To_naive.v
+To_complete.v
