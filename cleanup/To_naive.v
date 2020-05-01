@@ -82,7 +82,7 @@ Defined.
 
 
 Definition to_N (le : list Arc_type) : list Edge_type := 
-    (map (fun ce => (ce.1.2, ce.2)) le).
+    nodup dec_Edge (map (fun ce => (ce.1.2, ce.2)) le).
 
 
 (* Since we can't apply nodup to path, 

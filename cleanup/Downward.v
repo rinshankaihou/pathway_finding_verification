@@ -26,7 +26,23 @@ Theorem naive_start_correct:
     Some paths = (find_path (start_v : Vertex) (end_v : Vertex) (ATC : list string) (D : C_Graph_type)) ->
     In path paths ->
     naive_path_starts_with_vertex (to_N_path path) start_v.
-Proof. Admitted.
+Proof. 
+    (* Hint Resolve output_path_start_correct. *)
+    intros. unfold naive_path_starts_with_vertex. 
+    assert (
+        (exists taxiway_name l_c, to_N_path path = to_N_path ( (((start_v, input), (start_v, input)), taxiway_name)::l_c ) )->
+        exists taxiway_name l, to_N_path path = (start_v, input, taxiway_name)::l). hammer. 
+    apply H1. clear H1.
+    assert (
+        (exists taxiway_name l_c,
+            path = ((start_v, input), (start_v, input), taxiway_name) :: l_c ) ->
+        exists taxiway_name l_c,
+            to_N_path path = to_N_path ((start_v, input, (start_v, input), taxiway_name) :: l_c)
+    ). hammer. apply H1. clear H1. 
+    apply output_path_start_correct with (start_v := start_v) (end_v := end_v) (ATC := ATC) (D := D) (paths := paths).
+    apply H. apply H0.
+Qed.
+    
 
 
 
@@ -42,7 +58,8 @@ Theorem output_path_end_correct:
     Some paths = (find_path (start_v : Vertex) (end_v : Vertex) (ATC : list string) (D : C_Graph_type)) ->
     In path paths ->
     naive_ends_with_vertex (to_N_path path) end_v.
-Proof. Admitted.
+Proof. 
+    intros. unfold naive_ends_with_vertex. Admitted.
 
 
 (* in graph *)
@@ -58,7 +75,10 @@ Theorem naive_in_graph :
     Some paths = (find_path (start_v : Vertex) (end_v : Vertex) (ATC : list string) (D : C_Graph_type)) ->
     In path paths ->
     naive_path_in_graph (to_N_path path) (to_N D).
-Proof. Admitted.
+Proof. 
+    intros. unfold naive_path_in_graph. 
+    assert (forall a : Edge_type, In a (to_N_path D) -> In a (to_N D)).
+        unfold to_N_path. unfold to_N. 
 
 
 (* connected *)
