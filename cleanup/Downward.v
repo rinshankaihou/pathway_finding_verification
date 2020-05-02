@@ -25,19 +25,19 @@ Theorem naive_start_correct:
     forall start_v end_v ATC D (path : list Arc_type) (paths : list (list Arc_type)),
     Some paths = (find_path (start_v : Vertex) (end_v : Vertex) (ATC : list string) (D : C_Graph_type)) ->
     In path paths ->
-    naive_path_starts_with_vertex (to_N_path path) start_v.
+    naive_path_starts_with_vertex (to_N path) start_v.
 Proof. 
     (* Hint Resolve output_path_start_correct. *)
     intros. unfold naive_path_starts_with_vertex. 
     assert (
-        (exists taxiway_name l_c, to_N_path path = to_N_path ( (((start_v, input), (start_v, input)), taxiway_name)::l_c ) )->
-        exists taxiway_name l, to_N_path path = (start_v, input, taxiway_name)::l). hammer. 
+        (exists taxiway_name l_c, to_N path = to_N ( (((start_v, input), (start_v, input)), taxiway_name)::l_c ) )->
+        exists taxiway_name l, to_N path = (start_v, input, taxiway_name)::l). hammer. 
     apply H1. clear H1.
     assert (
         (exists taxiway_name l_c,
             path = ((start_v, input), (start_v, input), taxiway_name) :: l_c ) ->
         exists taxiway_name l_c,
-            to_N_path path = to_N_path ((start_v, input, (start_v, input), taxiway_name) :: l_c)
+            to_N path = to_N ((start_v, input, (start_v, input), taxiway_name) :: l_c)
     ). hammer. apply H1. clear H1. 
     apply output_path_start_correct with (start_v := start_v) (end_v := end_v) (ATC := ATC) (D := D) (paths := paths).
     apply H. apply H0.
@@ -57,7 +57,7 @@ Theorem output_path_end_correct:
     forall start_v end_v ATC D (path : list Arc_type) (paths : list (list Arc_type)),
     Some paths = (find_path (start_v : Vertex) (end_v : Vertex) (ATC : list string) (D : C_Graph_type)) ->
     In path paths ->
-    naive_ends_with_vertex (to_N_path path) end_v.
+    naive_ends_with_vertex (to_N path) end_v.
 Proof. 
     intros. unfold naive_ends_with_vertex. Admitted.
 
@@ -74,15 +74,13 @@ Theorem naive_in_graph :
     forall start_v end_v ATC D (path : list Arc_type) (paths : list (list Arc_type)),
     Some paths = (find_path (start_v : Vertex) (end_v : Vertex) (ATC : list string) (D : C_Graph_type)) ->
     In path paths ->
-    naive_path_in_graph (to_N_path path) (to_N D).
+    naive_path_in_graph (to_N path) (to_N D).
 Proof. 
     intros. intro a. unfold naive_path_in_graph. 
-    assert ((In a (to_N_path D)) -> In a (to_N D)).
-        unfold to_N_path. unfold to_N. apply nodup_In.
-    intros. apply H1. clear H1. unfold to_N_path.         
+    intros. unfold to_N.    
     assert (
         forall x, 
-        In x D -> In ((fun ce => (ce.1.2, ce.2)) x) (to_N_path D))
+        In x D -> In (C_to_N x) (to_N_path D))
     ).   
 
     assert (forall y, In y D  ->
