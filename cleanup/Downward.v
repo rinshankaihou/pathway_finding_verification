@@ -76,9 +76,32 @@ Theorem naive_in_graph :
     In path paths ->
     naive_path_in_graph (to_N_path path) (to_N D).
 Proof. 
-    intros. unfold naive_path_in_graph. 
-    assert (forall a : Edge_type, In a (to_N_path D) -> In a (to_N D)).
-        unfold to_N_path. unfold to_N. 
+    intros. intro a. unfold naive_path_in_graph. 
+    assert ((In a (to_N_path D)) -> In a (to_N D)).
+        unfold to_N_path. unfold to_N. apply nodup_In.
+    intros. apply H1. clear H1. unfold to_N_path.         
+    assert (
+        forall x, 
+        In x D -> In ((fun ce => (ce.1.2, ce.2)) x) (to_N_path D))
+    ).   
+
+    assert (forall y, In y D  ->
+        In (y.1.2, y.2) (to_N_path D)) as H_d.
+        intros. unfold to_N_path. hammer.
+
+    intros. 
+    apply H_d with (y:=x). apply H1. assumption.
+    
+    
+
+    (* assert (forall x, In ((x, a.1), a.2) (tl path) -> In ((fun ce => (ce.1.2, ce.2)) ((x, a.1), a.2)) (tl (to_N_path path))) as H_path.
+        intros. 
+        assert (tl (to_N_path path) = to_N_path (tl path)). hammer. rewrite -> H3. clear H3.
+        unfold to_N_path. hammer. *)
+    
+    
+
+    
 
 
 (* connected *)

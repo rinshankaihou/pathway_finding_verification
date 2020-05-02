@@ -80,15 +80,18 @@ Proof. intros. destruct (eq_e a b) eqn :H.
 Defined.
 
 
+Definition c_to_N : Arc_type -> Edge_type :=
+    fun ce => (ce.1.2, ce.2).
 
-Definition to_N (le : list Arc_type) : list Edge_type := 
-    nodup dec_Edge (map (fun ce => (ce.1.2, ce.2)) le).
+(* abandon now *)
+Definition to_N_nodup (le : list Arc_type) : list Edge_type := 
+    nodup dec_Edge (map c_to_N le).
 
 
 (* Since we can't apply nodup to path, 
     because we might encounter cases going through on edge multiple times*)
-Definition to_N_path (le : list Arc_type) : list Edge_type :=
-    map (fun ce => (ce.1.2, ce.2)) le.
+Definition to_N (le : list Arc_type) : list Edge_type :=
+    map c_to_N le.
 
 
 (* Eval compute in to_N [(((Ch, BC), (Ch, AA3)), B); (((Ch, BC), (Ch, AA3)), B)].
