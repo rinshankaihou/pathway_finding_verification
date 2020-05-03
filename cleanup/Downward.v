@@ -48,6 +48,14 @@ Qed.
 
 (* end correct*)
 
+Lemma hd_error_f : 
+    forall (f:Arc_type -> Edge_type) a l,
+    hd_error l = Some a -> hd_error (map f l) = Some (f a).
+Proof.
+    intros. hammer.
+Qed.
+
+
 Definition naive_ends_with_vertex (path : list Edge_type) (end_v : Vertex) : Prop :=
     exists end_Edge,
     ((hd_error (rev path)) = Some end_Edge) /\ end_Edge.1.1 = end_v.
@@ -59,11 +67,37 @@ Theorem output_path_end_correct:
     In path paths ->
     naive_ends_with_vertex (to_N path) end_v.
 Proof. 
-    intros. unfold naive_ends_with_vertex. Admitted.
+    intros. unfold naive_ends_with_vertex.
+    assert (
+        rev (to_N path) = to_N (rev path)
+    ). unfold to_N. hammer.  rewrite -> H1. 
+    
+    assert (
+        exists end_arc,
+            hd_error (rev path) = Some end_arc /\ end_arc.1.2.1 = end_v
+    ) as H_original. 
+    apply output_path_end_correct with (start_v := start_v) (ATC := ATC) (D:=D) (path:=path) (paths:=paths). assumption. assumption.
+
+    destruct H_original as [v H_2]. destruct H_2 as [H_l H_r].
+    exists (c_to_n v). split.
+    - unfold to_N. apply hd_error_f with (l:=rev path). assumption.  
+    - unfold c_to_n. simpl. assumption.
+Qed.    
+     
 
 
-(* in graph *)
 
+
+(* in graph *) 
+
+
+
+Lemma to_N_downward : 
+    forall x path, In x path -> 
+    forall a, a = c_to_n x -> In a (to_N path).
+Proof.
+    intros. unfold to_N. hammer.
+Qed. 
 
 
 Definition naive_path_in_graph (path : list Edge_type) (G : list Edge_type) : Prop :=
@@ -76,30 +110,21 @@ Theorem naive_in_graph :
     In path paths ->
     naive_path_in_graph (to_N path) (to_N D).
 Proof. 
-    intros. intro a. unfold naive_path_in_graph. 
-    intros. unfold to_N.    
+    intros. unfold naive_path_in_graph.
+    
     assert (
-        forall x, 
-        In x D -> In (C_to_N x) (to_N_path D))
-    ).   
+        path_in_graph path D
+    ) as H_original. hammer. unfold path_in_graph in H_original.
 
-    assert (forall y, In y D  ->
-        In (y.1.2, y.2) (to_N_path D)) as H_d.
-        intros. unfold to_N_path. hammer.
+    assert (
+        forall a path, In a (tl (to_N path)) <-> In a (to_N (tl path))
+    ) as H_tl. intros. split. hammer. hammer. 
 
-    intros. 
-    apply H_d with (y:=x). apply H1. assumption.
-    
+    unfold to_N in H_tl. unfold to_N. hammer.
+Qed.
     
 
-    (* assert (forall x, In ((x, a.1), a.2) (tl path) -> In ((fun ce => (ce.1.2, ce.2)) ((x, a.1), a.2)) (tl (to_N_path path))) as H_path.
-        intros. 
-        assert (tl (to_N_path path) = to_N_path (tl path)). hammer. rewrite -> H3. clear H3.
-        unfold to_N_path. hammer. *)
-    
-    
 
-    
 
 
 (* connected *)
