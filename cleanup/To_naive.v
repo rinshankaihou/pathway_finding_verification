@@ -80,13 +80,14 @@ Proof. intros. destruct (eq_e a b) eqn :H.
 Defined.
 
 
-
+(* we allow replicants in to_N *)
 Definition to_N (le : list Arc_type) : list Edge_type := 
-    (map (fun ce => (ce.1.2, ce.2)) le).
+    map (fun ce => (ce.1.2, ce.2)) le.
 
 
 (* Since we can't apply nodup to path, 
     because we might encounter cases going through on edge multiple times*)
+(* Thus to_N_path coincide with to_N, which is desired because it may ease the proof. *)
 Definition to_N_path (le : list Arc_type) : list Edge_type :=
     map (fun ce => (ce.1.2, ce.2)) le.
 

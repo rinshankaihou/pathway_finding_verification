@@ -12,7 +12,14 @@ Open Scope string_scope.
 Open Scope list_scope.
 Require Import Coq.Program.Equality.
 Require Import Arith.
+Require Import Relation_Definitions Setoid.
+Require Import Relations.
+Require Import Compare_dec.
+Require Import ArithRing. 
+Require Import Omega.
 Require Import Coq.Program.Tactics.
+
+From Hammer Require Import Hammer.
 
 (* ========== Naive (undirected) Graph ========== *)
 
@@ -29,17 +36,37 @@ Definition eqv (v1 : Vertex) (v2 : Vertex) : bool :=
     match v1, v2 with
     index n1, index n2 => Nat.eqb n1 n2
     end.
-
+Notation "a =v= b" := (eqv a b)  (at level 70).
 (* configure Hintdb *)
 Hint Resolve beq_nat_refl.
 
 Lemma eqv_eq :
-  forall v1 v2, (eqv v1 v2 = true) <-> (v1 = v2).
+  forall v1 v2, (eqv v1 v2 = true) <-> (v1 = v2). 
 Proof. intros. split. 
     - intros. unfold eqv in H. destruct v1 as [n1]. destruct v2 as [n2]. 
     apply (Nat.eqb_eq n1 n2) in H. rewrite H. reflexivity.
     - intros. rewrite -> H. induction v2. simpl. auto. 
 Qed.
+
+Lemma eqv_refl: reflexive Vertex eqv.
+Proof. unfold reflexive. intros. apply eqv_eq. reflexivity. Qed.
+
+Lemma eqv_sym: symmetric Vertex eqv.
+Proof. unfold symmetric. intros. hammer. Qed.
+
+Lemma eqv_trans: transitive Vertex eqv.
+Proof. unfold transitive. intros. hammer. Qed.
+
+(* Vertex is a setoid with relation eqv *)
+Theorem Vertexoid: Setoid_Theory _ eqv.
+split. exact eqv_refl. exact eqv_sym. exact eqv_trans. Qed.
+
+(* Add Parametric Relation (V :Vertex) : (_) (eqv V V)
+  reflexivity proved by (eq_set_refl (A:=A))
+  symmetry proved by (eq_set_sym (A:=A))
+  transitivity proved by (eq_set_trans (A:=A))
+  as eq_set_rel. *)
+(* TODO rewrite eqv to be type: Relation Vertex *)
 
 (* 
     Taxiway_type is a string of the taxiway name

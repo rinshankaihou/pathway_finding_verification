@@ -22,18 +22,35 @@ From Taxiway Require Import Example.
 Definition Edge_inv (edge : Edge_type) : Edge_type := 
     ((edge.1.2, edge.1.1), edge.2).
 
+    (* add inverse of every edge, subtract the reversed input edge *)
 Definition undirect_to_bidirect (ng : N_Graph_type) : N_Graph_type := 
     filter (fun x => negb (eqv x.1.1 input)) (flat_map (fun edge => [edge; Edge_inv edge]) ng).
 
-Definition previous_edges (cur : Edge_type) (ng : N_Graph_type) : list Edge_type :=
-    filter (fun x => (eqv x.1.1 cur.1.2) && negb (eqv x.1.2 cur.1.1)) ng.
+(* every edge that goes to cur.1.2 except (Edge_inv cur) *)
+(* NOTE ng must be bidirected *)
+Definition previous_edges (cur : Edge_type) (bg : N_Graph_type) : list Edge_type :=
+    filter (fun x => (eqv x.1.1 cur.1.2) && negb (eqv x.1.2 cur.1.1)) bg.
 
-Definition generate_edges (ng : N_Graph_type) (edge : Edge_type) : list Arc_type :=
-    map (fun x => ((x.1, edge.1), edge.2)) (previous_edges edge ng).
+(* NOTE bg must be bidirected *)
+(* geenrate edges in complete graph related to a single edge (input) *)
+Definition generate_edges (bg : N_Graph_type) (edge : Edge_type) : list Arc_type :=
+    map (fun x => ((x.1, edge.1), edge.2)) (previous_edges edge bg).
 
 Definition to_C (ng : N_Graph_type) : C_Graph_type :=
-    flat_map (generate_edges (undirect_to_bidirect ng)) (undirect_to_bidirect ng).
+    let bg := undirect_to_bidirect ng in
+        flat_map (generate_edges bg) bg.
 
+
+(* examples *)
+Example A: Vertex := index 1.
+Example B: Vertex := index 2.
+Example C: Vertex := index 3.
+Example D: Vertex := index 4.
+Example E: Vertex := index 5.
+
+
+Example AB: Edge_type := (A, B, "x").
+Example BA: Edge_type := (B, A, "x").
 (* ========== testcase ========== *)
 (*
     A testcase for the to_C function on ann arbor case.
