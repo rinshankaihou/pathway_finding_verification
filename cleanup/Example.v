@@ -121,7 +121,19 @@ Example G1 : N_Graph_type := [
     ((AA1, A1r), A)
     ].
 
-Example complete_G1 : (to_N (to_C G1)) = [].
+
+
+From mathcomp Require Import all_ssreflect.
+
+Theorem toC_toN_id : forall (ne: Edge_type) ,
+    no_self_loop G1 -> (* no self loop *)
+    In ne G1 ->
+    (exists prev_ne, In prev_ne (previous_edges ne (undirect_to_bidirect G1))) -> (* ne has a previous edge in the bidirect graph *)
+    (forall ne, In ne G1 ->
+        (ne.1.1 >v< input) /\ (ne.1.2 >v< input)) -> (* input vertex should not appear in any naive graph *)
+    In ne (to_N (to_C G1)).
+
+    Example complete_G1 : (to_N (to_C G1)) = [].
 Proof. simpl.
 
 Eval compute in (to_C naive_ann_arbor).

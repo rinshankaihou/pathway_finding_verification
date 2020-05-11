@@ -55,7 +55,7 @@ Example BA: Edge_type := (B, A, "x").
 (*
     A testcase for the to_C function on ann arbor case.
 *)
-(* Definition eqe (e1 :Arc_type) (e2:Arc_type) : bool :=
+Definition eqe (e1 :Arc_type) (e2:Arc_type) : bool :=
     (eqv e1.1.1.1 e2.1.1.1) &&
     (eqv e1.1.1.2 e2.1.1.2) &&
     (eqv e1.1.2.1 e2.1.2.1) &&
@@ -74,6 +74,6 @@ Fixpoint two_list_inclusion (l1 : list Arc_type) (l2 : list Arc_type) : bool :=
     | h::t => (in_list_b h l2) && two_list_inclusion t l2
     end.
 
-Eval compute in two_list_inclusion ann_arbor (to_C naive_ann_arbor) 
-    && two_list_inclusion (to_C naive_ann_arbor) ann_arbor. *)
+
+unfold ann_arbor, naive_ann_arbor, incl. intros. Locate ann_arbor. simpl.
 

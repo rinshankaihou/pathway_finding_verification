@@ -88,15 +88,62 @@ simpl in H2. destruct H2.
 - hammer.
 Qed.
 
-Lemma negb_veq_refl:
-    forall v1 v2, v1 >v< v2 <-> v2 >v< v1.
-Proof. hammer. Qed.
+(* vertices in the naive graph, ARB *)
+Example AA3 : Vertex := index 1.
+Example AB := index 2.
+Example AC := index 3.
+Example AA1 := index 4.
+Example Ch := index 5.
+Example BC := index 6.
+Example A3r := index 7.
+Example A2r := index 8.
+Example A1r := index 9.
+
+(* ============ taxiway names ============*)
+Example A : Taxiway_type := "A".
+Example B := "B".
+Example C := "C".
+Example A1 := "A1".
+Example A2 := "A2".
+Example A3 := "A3".
+
+
+
+(* Example G1 : N_Graph_type := [ 
+    ((AA1, AC), A);
+    ((AA1, A1r), A)
+    ].
+
+Theorem toC_toN_id : forall (ne: Edge_type) ,
+    no_self_loop G1 -> (* no self loop *)
+    In ne G1 ->
+    (exists prev_ne, In prev_ne (previous_edges ne (undirect_to_bidirect G1))) -> (* ne has a previous edge in the bidirect graph *)
+    (forall ne, In ne G1 ->
+        (ne.1.1 >v< input) /\ (ne.1.2 >v< input)) -> (* input vertex should not appear in any naive graph *)
+        In ne (to_N (to_C G1)) \/ In (Edge_inv ne) (to_N (to_C G1)).
+Proof. intros. simpl in H0. destruct H0.
+hammer. hammer. Qed.  *)
+
+
+(* TODO o put it in types.v *)
+Lemma negb_eqv_refl: forall v1 v2, v1 >v< v2 <-> v2 >v< v1.
+Proof. intros. split.
+- hammer.
+- hammer.
+Qed.
+
+Lemma negb_eqv_false_equiv: forall v1 v2, (v1 =v= v2) = false -> (v2 =v= v1) = false.
+Proof. intros.
+apply eqv_rewrite_2. apply negb_eqv_refl. hammer.
+Qed.
 
 (* ========== identity property ========== *)
 Theorem toC_toN_id : forall (ne: Edge_type) (G: N_Graph_type),
     no_self_loop G -> (* no self loop *)
     In ne G ->
-    (exists prev_ne, In prev_ne (previous_edges ne (undirect_to_bidirect G))) -> (* ne has a previous edge in the bidirect graph *)
+    (exists prev_ne, 
+        (In prev_ne (previous_edges ne (undirect_to_bidirect G)) /\ (* ne has a previous edge in the bidirect graph *)
+        exists L, [ne; prev_ne] ++ L = undirect_to_bidirect G)) -> (* WLOG let [ne, prev_ne] be the first two items in bi_G *)
     (forall ne, In ne G ->
         (ne.1.1 >v< input) /\ (ne.1.2 >v< input)) -> (* input vertex should not appear in any naive graph *)
     In ne (to_N (to_C G)).
@@ -106,6 +153,7 @@ unfold to_C.
 remember (undirect_to_bidirect G) as bg.
 unfold generate_edges.
 destruct Hexist_prev as [prev_ne Hprev_ne].
+destruct Hprev_ne as [Hprev_ne Hprev_ne0].
 
 remember (to_N (to_C [ne; prev_ne] )) as G''.
 destruct ne as [neEndStart neTaxi] eqn:Hne1.
@@ -113,6 +161,15 @@ destruct neEndStart as [neEnd neStart] eqn:Hne2.
 assert (Hne3: neStart >v< neEnd). {
     apply Hno_self_loop in Hne_in_G; simpl in Hne_in_G.
     apply eqv_inv. hammer. 
+}
+assert(Hne4: (neEnd >v< neStart)). {
+    apply negb_eqv_refl. assumption.
+}
+assert(Hne5: (neEnd =v= neStart) = false). {
+    hammer.
+}
+assert(Hne5_2: (neStart =v= neEnd) = false). {
+    apply negb_eqv_false_equiv. assumption.
 }
 (* properties about ne and prev_ne *)
 assert (Hne6: (ne.1.1 >v< input) /\ (ne.1.2 >v< input)) by hammer.
@@ -154,54 +211,134 @@ assert  (Hprev_ne6: (prev_ne.1.2 =v= neStart) = false). {
     - intuition.           
 }
 
-assert (In ne G''). {
+
+
+assert (lemma: In ne G'' ). {
     (* 4 situations, whether ne_start/end ?= Types.input *)
-    destruct (negb (Types.eqv neEnd Types.input)) eqn: Hend.
-    + destruct (negb (Types.eqv neStart Types.input)) eqn: Hstart.
-        - 
         rewrite -> HeqG''. rewrite <- Hne1. unfold to_C. 
         remember (undirect_to_bidirect [ne; prev_ne ]) as b_G' eqn: Hbg_ne. (* bidirected graph from [ne] *)
         rewrite -> Hne1 in Hbg_ne.
         (* eval bg_ne *)
         unfold undirect_to_bidirect in Hbg_ne. simpl in Hbg_ne.
-        rewrite -> Hend in Hbg_ne; rewrite -> Hstart in Hbg_ne; simpl in Hbg_ne.
+        rewrite -> Hne6 in Hbg_ne; rewrite -> Hne7 in Hbg_ne; 
+        rewrite -> Hprev_ne1 in Hbg_ne; rewrite -> Hprev_ne2 in Hbg_ne; simpl in Hbg_ne.
         unfold Edge_inv in Hbg_ne; simpl in Hbg_ne.
-        rewrite -> Hprev_ne1 in Hbg_ne; rewrite -> Hprev_ne2 in Hbg_ne; simpl in Hbg_ne. 
         (* eval (generate_edges bg_ne) *)
         unfold generate_edges, previous_edges.
         rewrite -> Hbg_ne. simpl.
 
         Ltac choose_branch term hyp :=
             assert (hyp: term) by hammer; rewrite hyp; simpl.
-        assert((neEnd >v< neStart)). {
-            apply negb_veq_refl in Hne3. assumption.
-        }
         choose_branch ((neEnd =v= neStart) && (neStart >v< neEnd) = false) branch1.
         choose_branch ((neStart =v= neStart) && (neEnd >v< neEnd) = false) branch2.
         choose_branch ((prev_ne.1.1 =v= neStart) && (prev_ne.1.2 >v< neEnd) = true) branch3.
-        right.
-        
-        choose_branch  ((prev_ne.1.2 =v= neStart) && (prev_ne.1.1 >v< neEnd) = false) branch4.
-        choose_branch ((neEnd =v= neEnd) && (neStart >v< neStart) = false) branch5.
-        choose_branch ((neStart =v= neEnd) && (neEnd >v< neStart) = false) branch6.
-        choose_branch ((prev_ne.1.1 =v= neEnd) && (prev_ne.1.2 >v< neStart) = false) branch7.
-        choose_branch ((prev_ne.1.2 =v= neEnd) && (prev_ne.1.1 >v< neStart) = false) branch8.
-        
-        assert ((neEnd =v= prev_ne.1.2) = false). {
-            apply negb_veq_refl in Hprev_ne4.
-            hammer.
-        }
-        choose_branch ((neEnd =v= prev_ne.1.2) && (neStart >v< prev_ne.1.1) = false) branch9.
-        choose_branch ((neStart =v= prev_ne.1.2) && (neEnd >v< prev_ne.1.1) = false) branch10.
-        choose_branch ((prev_ne.1.1 =v= prev_ne.1.2) && (prev_ne.1.2 >v< prev_ne.1.1) = false) branch11.
-        choose_branch ((prev_ne.1.2 =v= prev_ne.1.2) && (prev_ne.1.1 >v< prev_ne.1.1) = false) branch12.
-        choose_branch ((neEnd =v= prev_ne.1.1) && (neStart >v< prev_ne.1.2) = false) branch13.
-        choose_branch ((neStart =v= prev_ne.1.1) && (neEnd >v< prev_ne.1.2) = true) branch14.
-        right.
-        choose_branch ((prev_ne.1.1 =v= prev_ne.1.1) && (prev_ne.1.2 >v< prev_ne.1.2) = false) branch15.
-        choose_branch ((prev_ne.1.2 =v= prev_ne.1.1) && (prev_ne.1.1 >v< prev_ne.1.2) = false) branch16.
-
+        left. unfold c_to_n; simpl. easy.
 }
 
+assert(Hne8: (neStart =v= neStart)) by hammer.
+assert(Hne9: (neEnd =v= neEnd)) by hammer.
+assert (Hprev_ne7: (prev_ne.1.1 =v= neEnd) = false). {
+    apply eqv_rewrite_2. apply eqv_inv. apply eqv_eq in Hprev_ne3. rewrite Hprev_ne3.
+    apply eqv_inv. assumption.
+}
 
-unfold generate_edges. unfold to_N.
+(* eval G''*)
+unfold In, to_N, to_C, undirect_to_bidirect, generate_edges, previous_edges in HeqG''; simpl in HeqG''.
+
+Ltac unfold_undir_to_bidir Hprev_ne1 Hprev_ne2 Hne6 Hne7 H :=
+    unfold undirect_to_bidirect in H; simpl in H; 
+    rewrite -> Hprev_ne1, Hprev_ne2, Hne6, Hne7 in H; simpl. 
+
+Ltac choose_branch_2 term hyp H:=
+    assert (hyp: term) by first [apply negb_eqv_false_equiv; easy |  hammer];
+    rewrite -> hyp in H; simpl in H.
+
+unfold_undir_to_bidir Hprev_ne1 Hprev_ne2 Hne6 Hne7 HeqG''. 
+unfold Edge_inv in HeqG''. simpl in HeqG''.
+repeat (
+        try rewrite -> Hne3 in HeqG'';
+        try rewrite -> Hne4 in HeqG'';
+        try rewrite -> Hne5 in HeqG'';
+        try rewrite -> Hne5_2 in HeqG'';
+        try rewrite -> Hne6 in HeqG'';
+        try rewrite -> Hne7 in HeqG'';
+        try rewrite -> Hne8 in HeqG'';
+        try rewrite -> Hne9 in HeqG'';
+        try rewrite -> Hprev_ne1 in HeqG'';
+        try rewrite -> Hprev_ne2 in HeqG'';
+        try rewrite -> Hprev_ne3 in HeqG'';
+        try rewrite -> Hprev_ne4 in HeqG'';
+        try rewrite -> Hprev_ne5 in HeqG'';
+        try rewrite -> Hprev_ne6 in HeqG'';
+
+        try rewrite -> Hprev_ne7 in HeqG'';
+        try rewrite -> Hne1 in HeqG'';
+        try unfold Edge_inv in HeqG'';
+        try simpl in HeqG''
+    ).
+choose_branch_2 ((prev_ne.1.2 =v= neEnd) = false) hyp1 HeqG''.
+choose_branch_2 ((neEnd =v= prev_ne.1.2) = false) hyp2 HeqG''.
+choose_branch_2 ((neStart =v= prev_ne.1.2) = false) hyp3 HeqG''.
+
+assert(hyp4:(prev_ne.1.1 =v= prev_ne.1.2) = false). {
+apply eqv_rewrite_2. assumption.
+}
+rewrite -> hyp4 in HeqG''; simpl in HeqG''.
+assert (hyp5: prev_ne.1.1 =v= prev_ne.1.1) by reflexivity.
+rewrite -> hyp5 in HeqG''; simpl in HeqG''.
+assert (hyp6: prev_ne.1.2 =v= prev_ne.1.2) by reflexivity.
+rewrite -> hyp6 in HeqG''; simpl in HeqG''.
+choose_branch_2 ( (neEnd =v= prev_ne.1.1) = false) hyp7 HeqG''.
+choose_branch_2 ((neStart =v= prev_ne.1.1)) hyp8 HeqG''.
+choose_branch_2 ( (prev_ne.1.2 =v= prev_ne.1.1) = false) hyp9 HeqG''.
+
+unfold c_to_n in HeqG''; simpl in HeqG''.
+
+
+assert(lemma2: In ne (to_N (to_C G))). {
+    destruct Hprev_ne0 as [L Hprev_ne0].
+    unfold to_C. rewrite <- Heqbg. rewrite <- Hprev_ne0.
+     simpl.
+    (* evaluate the first generate_edges *)
+    Ltac temp Hne1 Hne3 Hne4 Hne5 Hne5_2 Hne6 Hne7 Hne8 Hne9 
+    Hprev_ne1 Hprev_ne2 Hprev_ne3 Hprev_ne4 Hprev_ne5 Hprev_ne6 Hprev_ne7 Hprev_ne
+    hyp1 hyp2 hyp3 hyp4 hyp5 hyp6 hyp7 hyp8 hyp9:=
+        unfold generate_edges at 1; simpl;
+        repeat (
+            try rewrite -> Hne1;
+            try rewrite -> Hne3;
+            try rewrite -> Hne4;
+            try rewrite -> Hne5;
+            try rewrite -> Hne5_2;
+            try rewrite -> Hne6;
+            try rewrite -> Hne7;
+            try rewrite -> Hne8;
+            try rewrite -> Hne9;
+            try rewrite -> Hprev_ne1;
+            try rewrite -> Hprev_ne2;
+            try rewrite -> Hprev_ne3;
+            try rewrite -> Hprev_ne4;
+            try rewrite -> Hprev_ne5;
+            try rewrite -> Hprev_ne6;
+            try rewrite -> Hprev_ne7;
+            try rewrite -> hyp1;
+            try rewrite -> hyp2;
+            try rewrite -> hyp3;
+            try rewrite -> hyp4;
+            try rewrite -> hyp5;
+            try rewrite -> hyp6;
+            try rewrite -> hyp7;
+            try rewrite -> hyp8;
+            try rewrite -> hyp9;
+            try unfold Edge_inv;
+            try simpl
+        );
+        unfold c_to_n; simpl.
+    temp Hne1 Hne3 Hne4 Hne5 Hne5_2 Hne6 Hne7 Hne8 Hne9 
+        Hprev_ne1 Hprev_ne2 Hprev_ne3 Hprev_ne4 Hprev_ne5 Hprev_ne6 Hprev_ne7 Hprev_ne
+        hyp1 hyp2 hyp3 hyp4 hyp5 hyp6 hyp7 hyp8 hyp9.
+    left. easy.
+}
+hammer.
+Qed.
+
