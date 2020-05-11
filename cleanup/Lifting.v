@@ -93,31 +93,26 @@ Lemma negb_veq_refl:
 Proof. hammer. Qed.
 
 (* ========== identity property ========== *)
-Theorem toC_toN_id : forall G,
+Theorem toC_toN_id : forall (ne: Edge_type) (G: N_Graph_type),
     no_self_loop G -> (* no self loop *)
-    (forall ne, In ne G ->
-        exists prev_ne, In prev_ne (previous_edges ne (undirect_to_bidirect G))) -> (* any edge has a previous edge in the bidirect graph*)
+    In ne G ->
+    (exists prev_ne, In prev_ne (previous_edges ne (undirect_to_bidirect G))) -> (* ne has a previous edge in the bidirect graph *)
     (forall ne, In ne G ->
         (ne.1.1 >v< input) /\ (ne.1.2 >v< input)) -> (* input vertex should not appear in any naive graph *)
-    incl G (to_N (to_C G)).
+    In ne (to_N (to_C G)).
 
-Proof. intros G Hno_self_loop Hexist_prev Hno_input.
+Proof. intros ne G Hno_self_loop Hne_in_G Hexist_prev Hno_input.
+unfold to_C. 
 remember (undirect_to_bidirect G) as bg.
-unfold incl. intros ne H.
-(* WTS In ne G'', where G'' = (toN toC G'), where G' = [ne, prev_ne] *)
-assert (Hexist_prev_ne: exists prev_ne, 
-    In prev_ne (previous_edges ne (undirect_to_bidirect G))). {
-    hammer.
-}
-destruct Hexist_prev_ne as [prev_ne Hprev_ne].
-clear Hexist_prev.
+unfold generate_edges.
+destruct Hexist_prev as [prev_ne Hprev_ne].
+
 remember (to_N (to_C [ne; prev_ne] )) as G''.
 destruct ne as [neEndStart neTaxi] eqn:Hne1.
 destruct neEndStart as [neEnd neStart] eqn:Hne2.
 assert (Hne3: neStart >v< neEnd). {
-    apply Hno_self_loop in H; simpl in H.
-    apply eqv_inv. hammer.
-     (* TODO can do better *)   
+    apply Hno_self_loop in Hne_in_G; simpl in Hne_in_G.
+    apply eqv_inv. hammer. 
 }
 (* properties about ne and prev_ne *)
 assert (Hne6: (ne.1.1 >v< input) /\ (ne.1.2 >v< input)) by hammer.

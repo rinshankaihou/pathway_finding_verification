@@ -13,7 +13,7 @@ From Coq.Arith Require Import Arith EqNat.
 Open Scope string_scope.
 Open Scope list_scope.
 From Taxiway Require Import Types.
-From Taxiway Require Import Find_path.
+From Taxiway Require Import Find_path To_complete To_naive.
 
 (* ============ vertex ============*)
 
@@ -115,5 +115,16 @@ Example eg_find_path_aux_6 : find_path Ch Ch [C; B; A; C; B; A; C] ann_arbor =
     Some ([[(((Ch, input), (Ch, input)), C); (((Ch, input), (BC, Ch)), C); (((BC, Ch), (AB, BC)), B); (((AB, BC), (AC, AB)), A);
     (((AC, AB), (BC, AC)), C); (((BC, AC), (AB, BC)), B); (((AB, BC), (AC, AB)), A); (((AC, AB), (BC, AC)), C); (((BC, AC), (Ch, BC)), C)]]).
 Proof. reflexivity. Qed. 
+
+Example G1 : N_Graph_type := [ 
+    ((AA1, AC), A);
+    ((AA1, A1r), A)
+    ].
+
+Example complete_G1 : (to_N (to_C G1)) = [].
+Proof. simpl.
+
+Eval compute in (to_C naive_ann_arbor).
+simpl.  unfold c_to_n. simpl. unfold naive_ann_arbor.
 
 
