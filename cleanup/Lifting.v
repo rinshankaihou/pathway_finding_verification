@@ -29,17 +29,79 @@ Require Import Coq.Program.Tactics.
     The properties need to be rewrited for naive graph
 *)
 
+(* outputs in (previous_edges ne bg) are in bg *)
+Lemma prev_edge_in_bi_G: forall G ne prev_ne,
+    In ne G ->
+    In prev_ne (previous_edges ne (undirect_to_bidirect G)) ->
+    In prev_ne (undirect_to_bidirect G).
+Proof.
+intros.
+unfold previous_edges in H0.
+remember (undirect_to_bidirect G) as bg.
+apply filter_In in H0. destruct H0. assumption.
+Qed.
+
+Lemma prev_edge_prop: forall prev_ne ne G,
+    In ne G ->
+    In prev_ne (previous_edges ne (undirect_to_bidirect G)) ->
+    prev_ne.1.1 =v= ne.1.2 /\ prev_ne.1.2 >v< ne.1.1.
+Proof.
+intros. unfold previous_edges in H0. apply filter_In in H0. destruct H0. apply andb_true_iff in H1. easy.
+Qed.
+(* undirect_to_bidirect preserve original edges *)
+Lemma undirect_edge_in_bi_G: forall G undir_e,
+    In undir_e G ->
+    undir_e.1.1 >v< input ->
+    In undir_e (undirect_to_bidirect G).
+Proof. intros. unfold undirect_to_bidirect. apply filter_In. split.
+- apply in_flat_map. exists undir_e. split. intuition. intuition. 
+- intuition.
+Qed.
+
+Definition no_self_loop (G: N_Graph_type) : Prop :=  (forall ne, In ne G -> ne.1.1 <> ne.1.2).
+
+
+
+Lemma no_self_loop_in_bg: 
+    forall G,
+    no_self_loop G -> no_self_loop (undirect_to_bidirect G).
+Proof.
+intros G H. unfold no_self_loop. intros. unfold undirect_to_bidirect in *.
+apply filter_In in H0. destruct H0. apply in_flat_map in H0. destruct H0 as [e hyp]; destruct hyp.
+unfold no_self_loop in H. 
+simpl in H2. destruct H2.
+- hammer.
+- hammer.
+Qed.
+
+Definition no_input_vertex (G: N_Graph_type) : Prop :=  
+    (forall ne, In ne G -> (ne.1.1 >v< input) /\ (ne.1.2 >v< input)).
+
+Lemma no_input_vertex_in_bg:
+    forall G,
+    no_input_vertex G -> no_input_vertex (undirect_to_bidirect G).
+Proof. intros. unfold no_input_vertex. intros. unfold undirect_to_bidirect in H0.
+apply filter_In in H0. destruct H0. apply in_flat_map in H0. destruct H0 as [e hyp]; destruct hyp.
+unfold no_self_loop in H. 
+simpl in H2. destruct H2.
+- hammer.
+- hammer.
+Qed.
+
+Lemma negb_veq_refl:
+    forall v1 v2, v1 >v< v2 <-> v2 >v< v1.
+Proof. hammer. Qed.
 
 (* ========== identity property ========== *)
-Locate ".1".
 Theorem toC_toN_id : forall G,
-    (forall ne, In ne G -> 
-        ne.1.1 <> ne.1.2) -> (* no self loop *)
-    (forall ne, In ne G -> 
-        exists prev_ne, In prev_ne (previous_edges ne (undirect_to_bidirect G))) (* any edge has a previous edge *)
-    -> incl G (to_N (to_C G)).
+    no_self_loop G -> (* no self loop *)
+    (forall ne, In ne G ->
+        exists prev_ne, In prev_ne (previous_edges ne (undirect_to_bidirect G))) -> (* any edge has a previous edge in the bidirect graph*)
+    (forall ne, In ne G ->
+        (ne.1.1 >v< input) /\ (ne.1.2 >v< input)) -> (* input vertex should not appear in any naive graph *)
+    incl G (to_N (to_C G)).
 
-Proof. intros G Hno_self_loop Hexist_prev.
+Proof. intros G Hno_self_loop Hexist_prev Hno_input.
 remember (undirect_to_bidirect G) as bg.
 unfold incl. intros ne H.
 (* WTS In ne G'', where G'' = (toN toC G'), where G' = [ne, prev_ne] *)
@@ -52,33 +114,98 @@ clear Hexist_prev.
 remember (to_N (to_C [ne; prev_ne] )) as G''.
 destruct ne as [neEndStart neTaxi] eqn:Hne1.
 destruct neEndStart as [neEnd neStart] eqn:Hne2.
-assert (Hne3: (eqv neStart neEnd) = false). {
+assert (Hne3: neStart >v< neEnd). {
     apply Hno_self_loop in H; simpl in H.
-    admit. (* TODO can do better *)
+    apply eqv_inv. hammer.
+     (* TODO can do better *)   
 }
-assert (Hne3_equiv: (eqv neEnd neStart) = false). {
-    rewrite <- Hne3.
-    admit.  (* TODO can do better *)
+(* properties about ne and prev_ne *)
+assert (Hne6: (ne.1.1 >v< input) /\ (ne.1.2 >v< input)) by hammer.
+rewrite -> Hne1 in Hne6; simpl in Hne6.
+destruct Hne6 as [Hne6 Hne7].
+
+assert(Hprev_ne_in_bg: In prev_ne bg). {
+    rewrite -> Heqbg.
+    apply prev_edge_in_bi_G with (ne:= ne). hammer.
+    hammer.
 }
-assert (Hne4: (eqv neStart neStart)) by admit.
-assert (Hne5: (eqv neEnd neEnd)) by admit.
+assert (Hprev_ne1: (prev_ne.1.1 >v< input) /\ (prev_ne.1.2 >v< input)). {
+    assert (Hprev_ne1_equiv: no_input_vertex (undirect_to_bidirect G)). {
+        apply no_input_vertex_in_bg. unfold no_input_vertex. easy.
+    }
+    rewrite <- Heqbg in Hprev_ne1_equiv. 
+    unfold no_input_vertex in Hprev_ne1_equiv. apply Hprev_ne1_equiv.
+    assumption.
+}
+destruct Hprev_ne1 as [Hprev_ne1 Hprev_ne2].
+assert (Hprev_ne3: prev_ne.1.1 =v= ne.1.2 /\ prev_ne.1.2 >v< ne.1.1). {
+    apply prev_edge_prop with (G:=G). hammer. hammer.
+}
+rewrite -> Hne1 in Hprev_ne3; simpl in Hprev_ne3.
+destruct Hprev_ne3 as [Hprev_ne3 Hprev_ne4].
+assert (Hprev_ne5: (prev_ne.1.1 >v< prev_ne.1.2)). {
+    rewrite -> Heqbg in Hprev_ne_in_bg.
+    apply no_self_loop_in_bg in Hprev_ne_in_bg.
+    apply eqv_inv.
+    assumption.
+    assumption.
+}
+
+assert  (Hprev_ne6: (prev_ne.1.2 =v= neStart) = false). {
+    apply eqv_eq in Hprev_ne3. rewrite Hprev_ne3 in Hprev_ne5.
+    clear - Hprev_ne5. apply eqv_rewrite_2 in Hprev_ne5.
+    destruct (prev_ne.1.2 =v= neStart) eqn: Htemp.
+    - apply eqv_eq in Htemp. symmetry in Htemp. apply eqv_eq in Htemp. rewrite Hprev_ne5 in Htemp. intuition.
+    - intuition.           
+}
+
 assert (In ne G''). {
     (* 4 situations, whether ne_start/end ?= Types.input *)
     destruct (negb (Types.eqv neEnd Types.input)) eqn: Hend.
     + destruct (negb (Types.eqv neStart Types.input)) eqn: Hstart.
         - 
-        rewrite -> HeqG'. rewrite <- Hne1. unfold to_C. 
+        rewrite -> HeqG''. rewrite <- Hne1. unfold to_C. 
         remember (undirect_to_bidirect [ne; prev_ne ]) as b_G' eqn: Hbg_ne. (* bidirected graph from [ne] *)
-        rewrite -> Hne1 in Hbg_ne. rewrite <- Hbg_ne.
+        rewrite -> Hne1 in Hbg_ne.
         (* eval bg_ne *)
         unfold undirect_to_bidirect in Hbg_ne. simpl in Hbg_ne.
         rewrite -> Hend in Hbg_ne; rewrite -> Hstart in Hbg_ne; simpl in Hbg_ne.
         unfold Edge_inv in Hbg_ne; simpl in Hbg_ne.
+        rewrite -> Hprev_ne1 in Hbg_ne; rewrite -> Hprev_ne2 in Hbg_ne; simpl in Hbg_ne. 
         (* eval (generate_edges bg_ne) *)
-        unfold generate_edges, previous_edges. simpl.
+        unfold generate_edges, previous_edges.
         rewrite -> Hbg_ne. simpl.
-        try rewrite -> Hne3; try rewrite -> Hne3_equiv; try rewrite -> Hne4; try rewrite -> Hne5; simpl.
-        rewrite -> Hend; rewrite -> Hstart; simpl.
+
+        Ltac choose_branch term hyp :=
+            assert (hyp: term) by hammer; rewrite hyp; simpl.
+        assert((neEnd >v< neStart)). {
+            apply negb_veq_refl in Hne3. assumption.
+        }
+        choose_branch ((neEnd =v= neStart) && (neStart >v< neEnd) = false) branch1.
+        choose_branch ((neStart =v= neStart) && (neEnd >v< neEnd) = false) branch2.
+        choose_branch ((prev_ne.1.1 =v= neStart) && (prev_ne.1.2 >v< neEnd) = true) branch3.
+        right.
+        
+        choose_branch  ((prev_ne.1.2 =v= neStart) && (prev_ne.1.1 >v< neEnd) = false) branch4.
+        choose_branch ((neEnd =v= neEnd) && (neStart >v< neStart) = false) branch5.
+        choose_branch ((neStart =v= neEnd) && (neEnd >v< neStart) = false) branch6.
+        choose_branch ((prev_ne.1.1 =v= neEnd) && (prev_ne.1.2 >v< neStart) = false) branch7.
+        choose_branch ((prev_ne.1.2 =v= neEnd) && (prev_ne.1.1 >v< neStart) = false) branch8.
+        
+        assert ((neEnd =v= prev_ne.1.2) = false). {
+            apply negb_veq_refl in Hprev_ne4.
+            hammer.
+        }
+        choose_branch ((neEnd =v= prev_ne.1.2) && (neStart >v< prev_ne.1.1) = false) branch9.
+        choose_branch ((neStart =v= prev_ne.1.2) && (neEnd >v< prev_ne.1.1) = false) branch10.
+        choose_branch ((prev_ne.1.1 =v= prev_ne.1.2) && (prev_ne.1.2 >v< prev_ne.1.1) = false) branch11.
+        choose_branch ((prev_ne.1.2 =v= prev_ne.1.2) && (prev_ne.1.1 >v< prev_ne.1.1) = false) branch12.
+        choose_branch ((neEnd =v= prev_ne.1.1) && (neStart >v< prev_ne.1.2) = false) branch13.
+        choose_branch ((neStart =v= prev_ne.1.1) && (neEnd >v< prev_ne.1.2) = true) branch14.
+        right.
+        choose_branch ((prev_ne.1.1 =v= prev_ne.1.1) && (prev_ne.1.2 >v< prev_ne.1.2) = false) branch15.
+        choose_branch ((prev_ne.1.2 =v= prev_ne.1.1) && (prev_ne.1.1 >v< prev_ne.1.2) = false) branch16.
+
 }
 
 

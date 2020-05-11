@@ -37,16 +37,56 @@ Definition eqv (v1 : Vertex) (v2 : Vertex) : bool :=
     index n1, index n2 => Nat.eqb n1 n2
     end.
 Notation "a =v= b" := (eqv a b)  (at level 70).
+Notation "a >v< b" := (~~(eqv a b)) (at level 70).
+
+Eval compute in ((index 1) >v< (index 2)).
 (* configure Hintdb *)
-Hint Resolve beq_nat_refl.
+Create HintDb VertexBase.
+Hint Resolve beq_nat_refl: VertexBase.
 
 Lemma eqv_eq :
-  forall v1 v2, (eqv v1 v2 = true) <-> (v1 = v2). 
+  forall v1 v2,(v1 =v= v2) <-> (v1 = v2). 
 Proof. intros. split. 
     - intros. unfold eqv in H. destruct v1 as [n1]. destruct v2 as [n2]. 
     apply (Nat.eqb_eq n1 n2) in H. rewrite H. reflexivity.
-    - intros. rewrite -> H. induction v2. simpl. auto. 
+    - intros. rewrite -> H. induction v2. simpl. auto with VertexBase. 
 Qed.
+
+Definition dec_Vertex_Type : forall (a b : Vertex), {a = b} + {a <> b}.
+Proof. intros. destruct (eqv a b) eqn : H.
+    - left. hammer.
+    - right. hammer.
+Defined.
+
+(* Definition eq_n (n1 : Node_type) (n2 : Node_type) : bool :=
+    (eqv n1.1 n2.1) && (eqv n1.2 n2.2).
+
+Lemma eqn_eq : 
+    forall n1 n2, (eq_n n1 n2 = true) <-> (n1=n2).
+Proof. intros. split.
+    - intros. unfold eq_n in H. hammer.
+    - hammer.
+Qed. *)
+
+
+Lemma eqv_inv:
+    forall v1 v2, (v1 >v< v2) <-> (v1 <> v2).
+Proof. intros. split.
+    - intros. hammer.
+    - intros. hammer. 
+Qed.
+
+
+Lemma eqv_rewrite_1:
+    forall v1 v2, (v1 =v= v2) -> (v1 =v= v2) = true.
+Proof. eauto. Qed.
+
+Lemma eqv_rewrite_2:
+    forall v1 v2, (v1 >v< v2) -> (v1 =v= v2) = false.
+Proof. intros. hammer. Qed.
+
+Hint Rewrite -> eqv_rewrite_1 : VertexBase.
+Hint Rewrite -> eqv_rewrite_2 : VertexBase.
 
 Lemma eqv_refl: reflexive Vertex eqv.
 Proof. unfold reflexive. intros. apply eqv_eq. reflexivity. Qed.
@@ -57,16 +97,32 @@ Proof. unfold symmetric. intros. hammer. Qed.
 Lemma eqv_trans: transitive Vertex eqv.
 Proof. unfold transitive. intros. hammer. Qed.
 
-(* Vertex is a setoid with relation eqv *)
-Theorem Vertexoid: Setoid_Theory _ eqv.
-split. exact eqv_refl. exact eqv_sym. exact eqv_trans. Qed.
 
-(* Add Parametric Relation (V :Vertex) : (_) (eqv V V)
-  reflexivity proved by (eq_set_refl (A:=A))
-  symmetry proved by (eq_set_sym (A:=A))
-  transitivity proved by (eq_set_trans (A:=A))
-  as eq_set_rel. *)
-(* TODO rewrite eqv to be type: Relation Vertex *)
+(* Vertex is a setoid with relation eqv *)
+(* Theorem Vertexoid: Setoid_Theory _ eqv.
+split. exact eqv_refl. exact eqv_sym. exact eqv_trans. Qed. *)
+
+Add Parametric Relation : Vertex eqv
+  reflexivity proved by eqv_refl
+  symmetry proved by (eqv_sym )
+  transitivity proved by (eqv_trans )
+  as eq_vertex_rel.
+
+
+(* Add Setoid Vertex eqv Vertexoid as Vertoid. *)
+
+Example test1: forall a, a=v=a.
+Proof. intros. reflexivity. Qed.
+
+
+Example test2: forall (a b c: Vertex), a=v=b /\ b=v=c -> c=v=a.
+Proof. intros.
+ destruct H. 
+transitivity b.
+-easy. (* easy will try symmetry, refl etc *)
+-easy.
+Qed.
+
 
 (* 
     Taxiway_type is a string of the taxiway name

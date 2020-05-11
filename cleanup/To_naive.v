@@ -21,29 +21,6 @@ Hammer_cleanup.
 (* ========== downward function ========== *)
 Locate " {} + {}".
 
-(* Definition dec_Vertex_Type : forall (a b : Vertex), {a = b} + {a <> b}.
-Proof. intros. destruct (eqv a b) eqn : H.
-    - left. hammer.
-    - right. hammer.
-Defined. *)
-
-
-(* Definition eq_n (n1 : Node_type) (n2 : Node_type) : bool :=
-    (eqv n1.1 n2.1) && (eqv n1.2 n2.2).
-
-Lemma eqn_eq : 
-    forall n1 n2, (eq_n n1 n2 = true) <-> (n1=n2).
-Proof. intros. split.
-    - intros. unfold eq_n in H. hammer.
-    - hammer.
-Qed. *)
-
-
-(* Definition dec_Node_Type : forall (a b : Node_type), {a = b} + {a <> b}.
-Proof. intros. destruct (eq_n a b) eqn : H.
-    - left. hammer.
-    - right. hammer.
-Defined. *)
 
 (* Definition eq_a (a1 : Arc_type) (a2 : Arc_type) : bool :=
     (eq_n a1.1.1 a2.1.1) && (eq_n a1.1.2 a2.1.2) && (a1.2 =? a2.2).
@@ -80,16 +57,18 @@ Proof. intros. destruct (eq_e a b) eqn :H.
 Defined.
 
 
-(* we allow replicants in to_N *)
-Definition to_N (le : list Arc_type) : list Edge_type := 
-    map (fun ce => (ce.1.2, ce.2)) le.
+Definition c_to_n : Arc_type -> Edge_type :=
+    fun ce => (ce.1.2, ce.2).
+
+(* abandon now *)
+Definition to_N_nodup (le : list Arc_type) : list Edge_type := 
+    nodup dec_Edge (map c_to_n le).
 
 
 (* Since we can't apply nodup to path, 
     because we might encounter cases going through on edge multiple times*)
-(* Thus to_N_path coincide with to_N, which is desired because it may ease the proof. *)
-Definition to_N_path (le : list Arc_type) : list Edge_type :=
-    map (fun ce => (ce.1.2, ce.2)) le.
+Definition to_N (le : list Arc_type) : list Edge_type :=
+    map c_to_n le.
 
 
 (* Eval compute in to_N [(((Ch, BC), (Ch, AA3)), B); (((Ch, BC), (Ch, AA3)), B)].

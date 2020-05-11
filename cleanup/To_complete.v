@@ -32,7 +32,7 @@ Definition previous_edges (cur : Edge_type) (bg : N_Graph_type) : list Edge_type
     filter (fun x => (eqv x.1.1 cur.1.2) && negb (eqv x.1.2 cur.1.1)) bg.
 
 (* NOTE bg must be bidirected *)
-(* geenrate edges in complete graph related to a single edge (input) *)
+(* genrate complete edges in bidirectional graph related to a single edge (input) *)
 Definition generate_edges (bg : N_Graph_type) (edge : Edge_type) : list Arc_type :=
     map (fun x => ((x.1, edge.1), edge.2)) (previous_edges edge bg).
 
