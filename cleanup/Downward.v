@@ -124,10 +124,33 @@ Proof.
 Qed.
     
 
-
-
+Lemma find_path_edge_legal: 
+forall (path : list Arc_type) start_v end_v ATC D  (paths : list (list Arc_type)),
+Some paths = (find_path (start_v : Vertex) (end_v : Vertex) (ATC : list string) (D : C_Graph_type)) ->
+In path paths ->
+(forall arc,  In arc path -> (arc.1.1.2 = arc.1.2.1)).
+Admitted.
 
 (* connected *)
+
+Definition Arc_conn' (e1 : Arc_type) (e2 : Arc_type) : Prop :=
+    (e1.1.1 = e2.1.2) /\ (e2.1.1.2 = e2.1.2.1).
+
+(* 
+    function to check whether a path is connected 
+    it requires every Arc to be connected
+
+    note that the function checks reverse order, since find_path_aux is reversed
+*)
+Fixpoint path_conn' (path : list Arc_type): Prop :=
+    match path with
+    | path_f::path_r => match path_r with
+        | path_s::path_r_r => (Arc_conn' path_f path_s) /\ (path_conn' path_r)
+        | [] => True
+        end
+    | [] => True (* a path shorter than 2 Arcs is trivially connected *)
+    end.
+
 
 Definition Edge_conn (e1 : Edge_type) (e2 : Edge_type) : Prop :=
     e1.1.1 = e2.1.2.
@@ -141,12 +164,57 @@ Fixpoint naive_path_conn (path : list Edge_type): Prop :=
     | [] => True
     end.
 
+
+From Taxiway Require Import Example.
+Example path_conn_eg1 : path_conn (rev [(((Ch, input), (BC, Ch)), C);
+(((BC, Ch), (AA3, A3r)), A3)]).
+
+Proof. simpl. unfold Arc_conn. simpl. split. reflexivity. reflexivity. Qed.
+
 Theorem naive_conn:
-    forall start_v end_v ATC D (path : list Arc_type) (paths : list (list Arc_type)),
+    forall (path : list Arc_type) start_v end_v ATC D  (paths : list (list Arc_type)),
     Some paths = (find_path (start_v : Vertex) (end_v : Vertex) (ATC : list string) (D : C_Graph_type)) ->
     In path paths ->
-    naive_path_conn (rev (to_N_path path)).
-Proof. Admitted.
+    naive_path_conn (rev (to_N path)).
+Proof.
+intros.
+        assert (
+            path_conn' (rev path)
+        ) as H_original by admit. 
+
+        (* TODO put this below to_N *)
+        assert (forall path, (rev (to_N path)) = to_N (rev path)) as lemma. {
+            intros.
+            unfold to_N. unfold c_to_n. rewrite map_rev. reflexivity. 
+        }
+
+
+        assert (forall path, In path paths -> path_conn (path) -> naive_path_conn ((to_N path))). {
+
+        (* INDUCT on P is wronh!!!! *)
+            intro p. dependent induction p.
+            - easy.
+            - intros. simpl.
+            destruct p.
+                + easy.
+                + simpl. split.
+                    * unfold Edge_conn, c_to_n. simpl.
+                    unfold path_conn in H1. destruct H2.
+                    unfold Arc_conn in H2.
+                    assert (a.1.2.1 = a.1.1.2). {
+                        assert((forall arc,  In arc [:: a, a0 & p] -> (arc.1.1.2 = arc.1.2.1))). {
+                            apply find_path_edge_legal with (start_v := start_v) (end_v := end_v) (ATC := ATC)
+                            (D := D) (paths := paths).
+                            assumption.
+                            assumption.
+                        }
+                        symmetry.
+                        apply H4.
+                        intuition.
+                    }
+                    hammer.
+                    * simpl in H2. destruct H2. simpl in IHp. apply IHp. assumption.
+Qed.
 
 
 (* follow ATC *)
@@ -171,5 +239,21 @@ Theorem naive_follow_atc:
     forall start_v end_v ATC D (path : list Arc_type) (paths : list (list Arc_type)),
     Some paths = (find_path (start_v : Vertex) (end_v : Vertex) (ATC : list string) (D : C_Graph_type)) ->
     In path paths ->
-    naive_path_follow_atc (to_N_path path) ATC.
-Proof. Admitted.
+    naive_path_follow_atc (to_N path) ATC.
+Proof.
+intros. unfold naive_path_follow_atc.
+    
+assert (
+    path_follow_atc path ATC
+) as H_original. hammer. unfold path_follow_atc in H_original.
+
+assert (
+    forall path, path_coresp_atc path = naive_path_coresp_atc (to_N path)
+) as H_tl. {
+    intros. 
+    induction path0.
+    - easy.
+    - simpl. hammer.
+}
+hammer. 
+Qed.

@@ -17,7 +17,6 @@ Require Import Arith.
 Require Import Coq.Program.Tactics.
 
 From Taxiway Require Import Types.
-From Taxiway Require Import Example. 
 
 Definition Edge_inv (edge : Edge_type) : Edge_type := 
     ((edge.1.2, edge.1.1), edge.2).
@@ -74,6 +73,4 @@ Fixpoint two_list_inclusion (l1 : list Arc_type) (l2 : list Arc_type) : bool :=
     | h::t => (in_list_b h l2) && two_list_inclusion t l2
     end.
 
-
-unfold ann_arbor, naive_ann_arbor, incl. intros. Locate ann_arbor. simpl.
 
