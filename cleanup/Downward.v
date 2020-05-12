@@ -122,19 +122,12 @@ Proof.
 
     unfold to_N in H_tl. unfold to_N. hammer.
 Qed.
-    
 
-Lemma find_path_edge_legal: 
-forall (path : list Arc_type) start_v end_v ATC D  (paths : list (list Arc_type)),
-Some paths = (find_path (start_v : Vertex) (end_v : Vertex) (ATC : list string) (D : C_Graph_type)) ->
-In path paths ->
-(forall arc,  In arc path -> (arc.1.1.2 = arc.1.2.1)).
-Admitted.
 
 (* connected *)
 
 Definition Arc_conn' (e1 : Arc_type) (e2 : Arc_type) : Prop :=
-    (e1.1.1 = e2.1.2) /\ (e2.1.1.2 = e2.1.2.1).
+    (e1.1.1 = e2.1.2) /\ (e1.1.1.2 = e1.1.2.1).
 
 (* 
     function to check whether a path is connected 
@@ -189,31 +182,30 @@ intros.
         }
 
 
-        assert (forall path, In path paths -> path_conn (path) -> naive_path_conn ((to_N path))). {
-
+        assert (forall path, path_conn' path -> naive_path_conn ((to_N path))). {
         (* INDUCT on P is wronh!!!! *)
             intro p. dependent induction p.
-            - easy.
-            - intros. simpl.
-            destruct p.
                 + easy.
-                + simpl. split.
-                    * unfold Edge_conn, c_to_n. simpl.
-                    unfold path_conn in H1. destruct H2.
-                    unfold Arc_conn in H2.
-                    assert (a.1.2.1 = a.1.1.2). {
-                        assert((forall arc,  In arc [:: a, a0 & p] -> (arc.1.1.2 = arc.1.2.1))). {
-                            apply find_path_edge_legal with (start_v := start_v) (end_v := end_v) (ATC := ATC)
-                            (D := D) (paths := paths).
-                            assumption.
-                            assumption.
-                        }
-                        symmetry.
-                        apply H4.
-                        intuition.
+                + intros. 
+                destruct p eqn:Hp.
+                    * easy.
+                    * assert (path_conn' (a0 :: l)). {
+                        hammer.
                     }
+                    apply IHp in H2. rewrite <- Hp in H2.
+                    simpl.
+                    split.
+                    {
+                        unfold Edge_conn, c_to_n; simpl.
+                        unfold path_conn' in H1. destruct H1.
+                        unfold Arc_conn' in H1. destruct H1.
+                        rewrite <- H4. rewrite -> H1. reflexivity.
+                    }
+                    unfold naive_path_conn in H2.
                     hammer.
-                    * simpl in H2. destruct H2. simpl in IHp. apply IHp. assumption.
+        }
+        rewrite -> lemma.
+        apply H1. assumption.
 Qed.
 
 
