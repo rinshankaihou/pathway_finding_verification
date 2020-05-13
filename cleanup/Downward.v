@@ -7,7 +7,7 @@ Open Scope list_scope.
 Require Import Coq.Program.Equality.
 Require Import Arith.
 Require Import Coq.Program.Tactics.
-From Taxiway Require Import To_naive.
+From Taxiway Require Import To_naive To_complete.
 From Taxiway Require Import Find_path.
 From Taxiway Require Import Correctness.
 
@@ -126,27 +126,23 @@ Qed.
 
 (* connected *)
 
-Definition Arc_conn' (e1 : Arc_type) (e2 : Arc_type) : Prop :=
-    (e1.1.1 = e2.1.2) /\ (e1.1.1.2 = e1.1.2.1).
+From Taxiway Require Import Example.
+Example path_conn_eg1 : path_conn (rev [(((Ch, input), (BC, Ch)), C);
+(((BC, Ch), (AA3, A3r)), A3)]).
+Proof. simpl. unfold Arc_conn. easy. Qed. 
 
-(* 
-    function to check whether a path is connected 
-    it requires every Arc to be connected
-
-    note that the function checks reverse order, since find_path_aux is reversed
-*)
-Fixpoint path_conn' (path : list Arc_type): Prop :=
-    match path with
-    | path_f::path_r => match path_r with
-        | path_s::path_r_r => (Arc_conn' path_f path_s) /\ (path_conn' path_r)
-        | [] => True
-        end
-    | [] => True (* a path shorter than 2 Arcs is trivially connected *)
-    end.
-
+(* an arc is legal if it has the form (AB from BC) *)
+Definition is_legal_arc (e1 : Arc_type)  : Prop :=
+   (e1.1.1.1 = e1.1.2.2).
+Example is_legal_arc_eg : is_legal_arc (((BC, Ch), (AA3, BC)), "").
+Proof. unfold is_legal_arc. easy. Qed.
 
 Definition Edge_conn (e1 : Edge_type) (e2 : Edge_type) : Prop :=
-    e1.1.1 = e2.1.2.
+    e1.1.2 = e2.1.1.
+
+(* NOTE the first edge is the later edge, i.e. the path is CH -> BC -> AA3 *)
+Example Edge_conn_eg: Edge_conn ((AA3, BC), "") ((BC, Ch), "") .
+Proof. simpl. unfold Edge_conn. easy. Qed.
 
 Fixpoint naive_path_conn (path : list Edge_type): Prop :=
     match path with
@@ -158,22 +154,28 @@ Fixpoint naive_path_conn (path : list Edge_type): Prop :=
     end.
 
 
-From Taxiway Require Import Example.
-Example path_conn_eg1 : path_conn (rev [(((Ch, input), (BC, Ch)), C);
-(((BC, Ch), (AA3, A3r)), A3)]).
+Lemma to_C_legal: 
+    forall arc (NG: N_Graph_type),
+    In arc (to_C NG) -> is_legal_arc arc.
+Proof. intros. unfold to_C in H. remember (undirect_to_bidirect NG) as BG.
+unfold generate_edges in H. unfold previous_edges in H.
+apply in_flat_map in H. destruct H as [e H]. destruct H. 
+apply in_map_iff in H0. destruct H0 as [a H0]. destruct H0. 
+apply filter_In in H1. destruct H1. hammer.
+Qed.
 
-Proof. simpl. unfold Arc_conn. simpl. split. reflexivity. reflexivity. Qed.
-
+(* NOTE this theorem require that D must consist ONLY legal arcs *)
 Theorem naive_conn:
     forall (path : list Arc_type) start_v end_v ATC D  (paths : list (list Arc_type)),
+    (forall arc, In arc (tl path) -> is_legal_arc arc) ->
     Some paths = (find_path (start_v : Vertex) (end_v : Vertex) (ATC : list string) (D : C_Graph_type)) ->
     In path paths ->
     naive_path_conn (rev (to_N path)).
 Proof.
 intros.
         assert (
-            path_conn' (rev path)
-        ) as H_original by admit. 
+            path_conn (rev path)
+        ) as H_original by hammer. 
 
         (* TODO put this below to_N *)
         assert (forall path, (rev (to_N path)) = to_N (rev path)) as lemma. {
@@ -181,31 +183,57 @@ intros.
             unfold to_N. unfold c_to_n. rewrite map_rev. reflexivity. 
         }
 
-
-        assert (forall path, path_conn' path -> naive_path_conn ((to_N path))). {
-        (* INDUCT on P is wronh!!!! *)
+        (* this assertion should be unrelated to find_path, and quantify over path to make it strong enough *)
+        assert (forall rev_path, 
+            path_conn (rev_path) ->
+            (forall arc, In arc (tl (rev rev_path))%SEQ -> is_legal_arc arc) ->
+             naive_path_conn ((to_N (rev_path)))). 
+        {
             intro p. dependent induction p.
                 + easy.
-                + intros. 
+                + intros. simpl. 
                 destruct p eqn:Hp.
                     * easy.
-                    * assert (path_conn' (a0 :: l)). {
+                    * assert (path_conn (a0 :: l)). {
                         hammer.
                     }
-                    apply IHp in H2. rewrite <- Hp in H2.
                     simpl.
+                    assert (rev [:: a, a0 & l] = rev (a0::l) ++ (rev [a])). {
+                        rewrite <- rev_app_distr. reflexivity.
+                    }
                     split.
                     {
+                        assert(H_a_legal: is_legal_arc a). {
+                            apply H3.
+                           
+                            rewrite -> H5. destruct (rev (a0 :: l)) eqn:H7.
+                            - assert ((a0 :: l) = rev []). hammer. simpl in H6. discriminate H6.
+                            - simpl. intuition.
+                        }
                         unfold Edge_conn, c_to_n; simpl.
-                        unfold path_conn' in H1. destruct H1.
-                        unfold Arc_conn' in H1. destruct H1.
-                        rewrite <- H4. rewrite -> H1. reflexivity.
+                        simpl in H2. destruct H2.
+                        unfold Arc_conn in H2. rewrite <- H2.
+                        (* assert (path' = rev  [:: a, a0 & l]  ). hammer. *)
+                        
+                        unfold is_legal_arc in H_a_legal. hammer.
                     }
-                    unfold naive_path_conn in H2.
-                    hammer.
+                    
+                    
+                    {
+                    apply IHp in H4.
+                    - simpl in H4. assumption.
+                    - intros. apply H3. rewrite -> H5.
+                    simpl. simpl in H6.
+                    remember ((rev l ++ [a0])%list) as l1.
+                    destruct l1 eqn: Hl1.
+                        + simpl in H6. contradiction.
+                        +  simpl in H6. simpl. apply in_rev. apply in_rev in H6.
+                        rewrite rev_app_distr. simpl. right. assumption.
+                    }
         }
+
         rewrite -> lemma.
-        apply H1. assumption.
+        apply H2. assumption. rewrite rev_involutive. assumption.
 Qed.
 
 
