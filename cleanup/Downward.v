@@ -14,8 +14,8 @@ From Taxiway Require Import Find_path.
 From Taxiway Require Import Correctness.
 
 From Hammer Require Import Hammer.
-Hammer_cleanup.
-(* Set Hammer ATPLimit 20. *)
+Set Hammer ATPLimit 20. 
+Set Hammer ReconstrLimit 20.
 
 
 (* start correct *)
@@ -118,11 +118,21 @@ Proof.
     ) as H_original. hammer. unfold path_in_graph in H_original.
 
     assert (
-        forall a path, In a (tl (to_N path)) <-> In a (to_N (tl path))
-    ) as H_tl. intros. split. hammer. hammer. 
+        forall a, In a (tl (to_N path)) <-> In a (to_N (tl path))
+    ) as H_tl. intros. split. hammer. hammer.
 
-    unfold to_N in H_tl. unfold to_N. hammer.
+    assert (
+        (forall a : Edge_type,
+        (In a (to_N (tl path)) -> In a (to_N D))) -> 
+        (forall a : Edge_type,
+        (In a (tl (to_N path)) -> In a (to_N D)))
+    ). hammer. apply H1. clear H1. clear H_tl.
+    
+    unfold to_N.
+    hammer. 
 Qed.
+
+
 
 
 (* connected *)
@@ -161,11 +171,15 @@ Fixpoint naive_path_conn (path : list Edge_type): Prop :=
 Lemma to_C_legal: 
     forall arc (NG: N_Graph_type),
     In arc (to_C NG) -> is_legal_arc arc.
-Proof. intros. unfold to_C in H. remember (undirect_to_bidirect NG) as BG.
-unfold generate_edges in H. unfold previous_edges in H.
-apply in_flat_map in H. destruct H as [e H]. destruct H. 
-apply in_map_iff in H0. destruct H0 as [a H0]. destruct H0. 
-apply filter_In in H1. destruct H1. hammer.
+Proof. 
+    intros. unfold to_C in H. remember (undirect_to_bidirect NG) as BG.
+    unfold generate_edges in H. unfold previous_edges in H.
+    apply in_flat_map in H. destruct H as [e H]. destruct H. 
+    apply in_map_iff in H0. destruct H0 as [a H0]. destruct H0. 
+    apply filter_In in H1. destruct H1. unfold is_legal_arc. 
+    unfold undirect_to_bidirect in HeqBG. simpl in HeqBG.    
+    assert(a.1.1 =v= e.1.2). hammer. clear H2. 
+    hammer.
 Qed.
 
 
@@ -278,7 +292,8 @@ assert (
     intros. 
     induction path0.
     - easy.
-    - simpl. Set Hammer ATPLimit 20. Hammer_cleanup. hammer.
+    - simpl. 
+    Hammer_cleanup. hammer.
 }
 hammer. 
 Qed.
