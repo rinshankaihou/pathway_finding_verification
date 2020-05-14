@@ -1,3 +1,5 @@
+(* This file have five theorems indicating the correctness theorems on complete graph preserve downward*)
+
 From mathcomp Require Import all_ssreflect.
 Require Import Coq.Strings.String Coq.Bool.Bool Coq.Lists.List.
 Import ListNotations.
@@ -12,8 +14,9 @@ From Taxiway Require Import Find_path.
 From Taxiway Require Import Correctness.
 
 From Hammer Require Import Hammer.
+Hammer_cleanup.
+(* Set Hammer ATPLimit 20. *)
 
-(* This file have five theorems indicating the theorem of complete graph preserve downward*)
 
 (* start correct *)
 
@@ -90,8 +93,6 @@ Qed.
 
 (* in graph *) 
 
-
-
 Lemma to_N_downward : 
     forall x path, In x path -> 
     forall a, a = c_to_n x -> In a (to_N path).
@@ -126,23 +127,26 @@ Qed.
 
 (* connected *)
 
-From Taxiway Require Import Example.
+(* From Taxiway Require Import Example.
 Example path_conn_eg1 : path_conn (rev [(((Ch, input), (BC, Ch)), C);
 (((BC, Ch), (AA3, A3r)), A3)]).
-Proof. simpl. unfold Arc_conn. easy. Qed. 
+Proof. simpl. unfold Arc_conn. easy. Qed.  *)
 
-(* an arc is legal if it has the form (AB from BC) *)
+
+(* an arc is legal if it has the form (from AB to BC), i.e. ((B, A), (C, B)) *)
 Definition is_legal_arc (e1 : Arc_type)  : Prop :=
    (e1.1.1.1 = e1.1.2.2).
-Example is_legal_arc_eg : is_legal_arc (((BC, Ch), (AA3, BC)), "").
-Proof. unfold is_legal_arc. easy. Qed.
+
+(* Example is_legal_arc_eg : is_legal_arc (((BC, Ch), (AA3, BC)), ""). *)
+(* Proof. unfold is_legal_arc. easy. Qed. *)
+
 
 Definition Edge_conn (e1 : Edge_type) (e2 : Edge_type) : Prop :=
     e1.1.2 = e2.1.1.
 
 (* NOTE the first edge is the later edge, i.e. the path is CH -> BC -> AA3 *)
-Example Edge_conn_eg: Edge_conn ((AA3, BC), "") ((BC, Ch), "") .
-Proof. simpl. unfold Edge_conn. easy. Qed.
+(* Example Edge_conn_eg: Edge_conn ((AA3, BC), "") ((BC, Ch), "") .
+Proof. simpl. unfold Edge_conn. easy. Qed. *)
 
 Fixpoint naive_path_conn (path : list Edge_type): Prop :=
     match path with
@@ -153,7 +157,7 @@ Fixpoint naive_path_conn (path : list Edge_type): Prop :=
     | [] => True
     end.
 
-
+(* A lemma to ensure that the complete graph follows the property *)
 Lemma to_C_legal: 
     forall arc (NG: N_Graph_type),
     In arc (to_C NG) -> is_legal_arc arc.
@@ -164,7 +168,8 @@ apply in_map_iff in H0. destruct H0 as [a H0]. destruct H0.
 apply filter_In in H1. destruct H1. hammer.
 Qed.
 
-(* NOTE this theorem require that D must consist ONLY legal arcs *)
+
+(* We add reasonable specification on complete graph, and we had proved the complete graph we generate follows the spec *)
 Theorem naive_conn:
     forall (path : list Arc_type) start_v end_v ATC D  (paths : list (list Arc_type)),
     (forall arc, In arc (tl path) -> is_legal_arc arc) ->
@@ -273,7 +278,7 @@ assert (
     intros. 
     induction path0.
     - easy.
-    - simpl. hammer.
+    - simpl. Set Hammer ATPLimit 20. Hammer_cleanup. hammer.
 }
 hammer. 
 Qed.

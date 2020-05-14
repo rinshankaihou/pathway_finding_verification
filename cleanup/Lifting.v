@@ -1,5 +1,6 @@
 (*
-    This file proves the theorem related to expansion and downward
+    This file proves the partial identity between expansion map and downward map
+    i.e. to_naive (to_complete G) is the subset of G
 *)
 From mathcomp Require Import all_ssreflect.
 Require Import Coq.Strings.String Coq.Bool.Bool Coq.Lists.List.
@@ -20,14 +21,6 @@ Require Import Omega.
 Require Import Coq.Program.Tactics.
 (* ========== downward properties ========== *)
 
-(*
-    we'll have five properties, the form should be
-
-    (In Cp CG -> properties holds for Cp in CG) ->
-        In Np (to_N CG) -> properties holds for Np in (to_N CG).
-    
-    The properties need to be rewrited for naive graph
-*)
 
 (* outputs in (previous_edges ne bg) are in bg *)
 Lemma prev_edge_in_bi_G: forall G ne prev_ne,
@@ -48,6 +41,8 @@ Lemma prev_edge_prop: forall prev_ne ne G,
 Proof.
 intros. unfold previous_edges in H0. apply filter_In in H0. destruct H0. apply andb_true_iff in H1. easy.
 Qed.
+
+
 (* undirect_to_bidirect preserve original edges *)
 Lemma undirect_edge_in_bi_G: forall G undir_e,
     In undir_e G ->
@@ -74,9 +69,11 @@ simpl in H2. destruct H2.
 - hammer.
 Qed.
 
+(* Check if there's "input" vertex *)
 Definition no_input_vertex (G: N_Graph_type) : Prop :=  
     (forall ne, In ne G -> (ne.1.1 >v< input) /\ (ne.1.2 >v< input)).
 
+(*  *)
 Lemma no_input_vertex_in_bg:
     forall G,
     no_input_vertex G -> no_input_vertex (undirect_to_bidirect G).
@@ -88,8 +85,9 @@ simpl in H2. destruct H2.
 - hammer.
 Qed.
 
+
 (* vertices in the naive graph, ARB *)
-Example AA3 : Vertex := index 1.
+(* Example AA3 : Vertex := index 1.
 Example AB := index 2.
 Example AC := index 3.
 Example AA1 := index 4.
@@ -105,7 +103,7 @@ Example B := "B".
 Example C := "C".
 Example A1 := "A1".
 Example A2 := "A2".
-Example A3 := "A3".
+Example A3 := "A3". *)
 
 
 
@@ -132,12 +130,16 @@ Proof. intros. split.
 - hammer.
 Qed.
 
+
 Lemma negb_eqv_false_equiv: forall v1 v2, (v1 =v= v2) = false -> (v2 =v= v1) = false.
 Proof. intros.
 apply eqv_rewrite_2. apply negb_eqv_refl. hammer.
 Qed.
 
+
 (* ========== identity property ========== *)
+
+(*  *)
 Theorem toC_toN_id : forall (ne: Edge_type) (G: N_Graph_type),
     no_self_loop G -> (* no self loop *)
     In ne G ->

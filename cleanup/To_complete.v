@@ -1,9 +1,5 @@
 (*
-    This file describes the function to expand a naive graph into a complete graph.
-    We need to prove that it's reasonable to expand -> run algorithm -> downward
-
-    TODO: May use List.incl to write F f = id
-    TODO: rewrite the expansion (if necessary)
+    This file describes the expansion map to expand an undirected (naive) graph into a directed expanded (complete) graph.
 *)
 
 From mathcomp Require Import all_ssreflect.
@@ -18,20 +14,22 @@ Require Import Coq.Program.Tactics.
 
 From Taxiway Require Import Types.
 
+(* inverse an edge, keep the taxiway name same *)
 Definition Edge_inv (edge : Edge_type) : Edge_type := 
     ((edge.1.2, edge.1.1), edge.2).
 
-    (* add inverse of every edge, subtract the reversed input edge *)
+(* add the inverse of every edge, change the graph to bi-directional graph
+    subtract the reversed input edge *)
 Definition undirect_to_bidirect (ng : N_Graph_type) : N_Graph_type := 
     filter (fun x => negb (eqv x.1.1 input)) (flat_map (fun edge => [edge; Edge_inv edge]) ng).
 
-(* every edge that goes to cur.1.2 except (Edge_inv cur) *)
-(* NOTE ng must be bidirected *)
+(* find all possible previous_edges, i.e. every edge that goes to cur.1.2 except the inverse of current edge *)
+(* NOTE the graph must be bidirected *)
 Definition previous_edges (cur : Edge_type) (bg : N_Graph_type) : list Edge_type :=
     filter (fun x => (eqv x.1.1 cur.1.2) && negb (eqv x.1.2 cur.1.1)) bg.
 
-(* NOTE bg must be bidirected *)
-(* genrate complete edges in bidirectional graph related to a single edge (input) *)
+(* NOTE the graph must be bidirected *)
+(* genrate arcs from bidirectional graph related to a single edge (input) *)
 Definition generate_edges (bg : N_Graph_type) (edge : Edge_type) : list Arc_type :=
     map (fun x => ((x.1, edge.1), edge.2)) (previous_edges edge bg).
 
