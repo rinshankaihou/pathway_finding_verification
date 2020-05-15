@@ -384,7 +384,7 @@ Qed.
 
 
 
-Theorem naive_conn_alt:
+Theorem naive_conn_complete:
     forall (path : list Arc_type) start_v end_v ATC (G : N_Graph_type)  (paths : list (list Arc_type)),
     Some paths = (find_path (start_v : Vertex) (end_v : Vertex) (ATC : list string) (to_C G)) ->
     In path paths ->
