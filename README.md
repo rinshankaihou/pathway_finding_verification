@@ -27,8 +27,8 @@ Though the listed environment is not necessarily required for you to run Coq, we
 Since the CoqHammer is a machine-learning-based proof automation tool, we recognized that many factors can affect whether the proof or reconstruction is successful. This is the reason why we strongly suggest you to use exactly the same environment setup as ours. 
 
 We also recommend you to prepare a high performance CPU to make the code. Low performance may cause the ```hammer``` tactic takes too long to find a proof, so it may assert an error. Based on our experiment, the code can be successfully compiled on:
-   - i7-9750H on Linux for 5 ~10 minutes
-   - i9-9880H on Windows WSL2 for around 10 minutes
+   - i7-9750H on Linux for 5 ~10 minutes with full CPU occupied
+   - i9-9880H on Windows WSL2 for around 10 minutes (only with performance mode in battery management)
 
 Otherwise, if you encounter any failure related to ```hammer``` tactic, please refer to the last section.
 
