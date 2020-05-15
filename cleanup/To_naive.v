@@ -16,7 +16,7 @@ From Taxiway Require Import Types.
 (* From Taxiway Require Import Example. *)
 
 From Hammer Require Import Hammer.
-Hammer_cleanup.
+
 (* default is 10, default may cause "Fail to Reconstruct Proof" in make for low performance CPU *)
 Set Hammer ReconstrLimit 20.
 

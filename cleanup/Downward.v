@@ -14,11 +14,9 @@ From Taxiway Require Import Find_path.
 From Taxiway Require Import Correctness.
 
 From Hammer Require Import Hammer.
-Set Hammer ATPLimit 20. 
-Set Hammer ReconstrLimit 20.
 
 
-(* start correct *)
+(* ======== start correct =========*)
 
 Definition naive_path_starts_with_vertex (path : list Edge_type) (start_v : Vertex) : Prop := 
     exists taxiway_name, exists l, path = ((start_v, input), taxiway_name) :: l.
@@ -49,7 +47,7 @@ Qed.
 
 
 
-(* end correct*)
+(* ========== end correct ===========*)
 
 Lemma hd_error_f : 
     forall (f:Arc_type -> Edge_type) a l,
@@ -64,7 +62,7 @@ Definition naive_ends_with_vertex (path : list Edge_type) (end_v : Vertex) : Pro
     ((hd_error (rev path)) = Some end_Edge) /\ end_Edge.1.1 = end_v.
 
 
-Theorem output_path_end_correct:
+Theorem naive_end_correct:
     forall start_v end_v ATC D (path : list Arc_type) (paths : list (list Arc_type)),
     Some paths = (find_path (start_v : Vertex) (end_v : Vertex) (ATC : list string) (D : C_Graph_type)) ->
     In path paths ->
@@ -91,7 +89,7 @@ Qed.
 
 
 
-(* in graph *) 
+(* ============ in graph ============*) 
 
 Lemma to_N_downward : 
     forall x path, In x path -> 
@@ -135,7 +133,7 @@ Qed.
 
 
 
-(* connected *)
+(* ============ connected ===========*)
 
 (* From Taxiway Require Import Example.
 Example path_conn_eg1 : path_conn (rev [(((Ch, input), (BC, Ch)), C);
@@ -150,7 +148,7 @@ Definition is_legal_arc (e1 : Arc_type)  : Prop :=
 (* Example is_legal_arc_eg : is_legal_arc (((BC, Ch), (AA3, BC)), ""). *)
 (* Proof. unfold is_legal_arc. easy. Qed. *)
 
-
+(* TWO edges are connected if e1.from = e2.to *)
 Definition Edge_conn (e1 : Edge_type) (e2 : Edge_type) : Prop :=
     e1.1.2 = e2.1.1.
 
@@ -158,6 +156,10 @@ Definition Edge_conn (e1 : Edge_type) (e2 : Edge_type) : Prop :=
 (* Example Edge_conn_eg: Edge_conn ((AA3, BC), "") ((BC, Ch), "") .
 Proof. simpl. unfold Edge_conn. easy. Qed. *)
 
+
+(*  The function to check whether path(edge) is connected
+    Since the edge doesn't contains the "from" information, we need to refer to the neighbor
+*)
 Fixpoint naive_path_conn (path : list Edge_type): Prop :=
     match path with
     | path_f::path_r => match path_r with
@@ -167,29 +169,17 @@ Fixpoint naive_path_conn (path : list Edge_type): Prop :=
     | [] => True
     end.
 
-(* A lemma to ensure that the complete graph follows the property *)
-Lemma to_C_legal: 
-    forall arc (NG: N_Graph_type),
-    In arc (to_C NG) -> is_legal_arc arc.
-Proof. 
-    intros. unfold to_C in H. remember (undirect_to_bidirect NG) as BG.
-    unfold generate_edges in H. unfold previous_edges in H.
-    apply in_flat_map in H. destruct H as [e H]. destruct H. 
-    apply in_map_iff in H0. destruct H0 as [a H0]. destruct H0. 
-    apply filter_In in H1. destruct H1. unfold is_legal_arc. 
-    unfold undirect_to_bidirect in HeqBG. simpl in HeqBG.    
-    assert(a.1.1 =v= e.1.2). hammer. clear H2. 
-    hammer.
-Qed.
+(* 
+    The first element in the path is the initial arc assigned by Find_path, which is (((start_v, input), (start_v, input)), t), will violate the property
+    We drop the first element in this property
 
-
-(* We add reasonable specification on complete graph, and we had proved the complete graph we generate follows the spec *)
+    We further introduce an assumption of the path, however the find_path on generated complete graph will always satisfy the assumption. We leave this part to partial identity.
+*)
 Theorem naive_conn:
     forall (path : list Arc_type) start_v end_v ATC D  (paths : list (list Arc_type)),
-    (forall arc, In arc (tl path) -> is_legal_arc arc) ->
     Some paths = (find_path (start_v : Vertex) (end_v : Vertex) (ATC : list string) (D : C_Graph_type)) ->
     In path paths ->
-    naive_path_conn (rev (to_N path)).
+    ((forall arc, In arc (tl path) -> is_legal_arc arc) -> naive_path_conn (rev (to_N path))).
 Proof.
 intros.
         assert (
@@ -256,7 +246,9 @@ intros.
 Qed.
 
 
-(* follow ATC *)
+
+
+(* ========== follow ATC =========*)
 
 Fixpoint naive_path_coresp_atc (path : list Edge_type) : list string :=
     match path with
@@ -293,7 +285,41 @@ assert (
     induction path0.
     - easy.
     - simpl. 
-    Hammer_cleanup. hammer.
+    hammer.
 }
 hammer. 
+Qed.
+
+
+
+
+(* ========== Correctness Preserve ========== *)
+
+(* collection of correctness properties *)
+Theorem correctness_preservation:
+    forall start_v end_v ATC D (path : list Arc_type) (paths : list (list Arc_type)),
+    Some paths = (find_path (start_v : Vertex) (end_v : Vertex) (ATC : list string) (D : C_Graph_type)) ->
+    In path paths ->
+    (* if find_path return some paths, then every path has the following properties: *)
+    naive_path_follow_atc (to_N path) ATC /\
+    naive_path_in_graph (to_N path) (to_N D) /\
+    naive_path_starts_with_vertex (to_N path) start_v /\
+    naive_ends_with_vertex (to_N path) end_v /\
+    (* The assumption always hold for D = to_C G, the complete theorem is in Lifting.v *)
+    ((forall arc, In arc (tl path) -> is_legal_arc arc) -> naive_path_conn (rev (to_N path))).
+Proof. intros.
+(* this tactic applys thm to current goal and 
+   finds hypothesis from assumption for the theorem *)
+Ltac temp_tac thm start_v end_v ATC D path paths :=
+    let app_thm := (apply (thm start_v end_v ATC D path paths); (repeat assumption)) in
+        match goal with
+        | [ |- _ /\ _] => split; [app_thm | ]
+        | _ =>  app_thm 
+        end.
+
+temp_tac naive_follow_atc start_v end_v ATC D path paths.
+temp_tac naive_in_graph start_v end_v ATC D path paths.
+temp_tac naive_start_correct start_v end_v ATC D path paths.
+temp_tac naive_end_correct start_v end_v ATC D path paths.
+temp_tac naive_conn path start_v end_v ATC D paths.
 Qed.
