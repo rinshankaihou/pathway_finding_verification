@@ -129,5 +129,5 @@ val c_to_n : arc_type -> edge_type
 val to_N : arc_type list -> edge_type list
 
 val path_finding_algorithm :
-  vertex -> vertex -> taxiway_type list -> n_Graph_type -> edge_type list list
-  option
+  vertex -> vertex -> taxiway_type list -> n_Graph_type -> edge_type list
+  list option

@@ -7,7 +7,7 @@ From Taxiway Require Import Types.
 From Taxiway Require Import To_complete.
 From Taxiway Require Import Find_path.
 From Taxiway Require Import To_naive.
-From Taxiway Require Import Example.
+
 Require Import Coq.Strings.String Coq.Bool.Bool Coq.Lists.List.
 Import ListNotations.
 
@@ -18,5 +18,3 @@ Definition path_finding_algorithm (start_v : Vertex) (end_v : Vertex) (ATC : lis
     | Some v => Some (map to_N v)
     end.
     
-
-Example path_finding_example := (path_finding_algorithm Ch A3r [C;A;A3] naive_ann_arbor).

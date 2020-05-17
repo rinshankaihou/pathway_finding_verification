@@ -128,6 +128,10 @@ val c_to_n : arc_type -> edge_type
 
 val to_N : arc_type list -> edge_type list
 
+val path_finding_algorithm :
+  vertex -> vertex -> taxiway_type list -> n_Graph_type -> edge_type list
+  list option
+
 val aA3 : vertex
 
 val aB : vertex
@@ -159,9 +163,5 @@ val a2 : string
 val a3 : string
 
 val naive_ann_arbor : n_Graph_type
-
-val path_finding_algorithm :
-  vertex -> vertex -> taxiway_type list -> n_Graph_type -> edge_type list list
-  option
 
 val path_finding_example : edge_type list list option

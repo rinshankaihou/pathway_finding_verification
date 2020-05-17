@@ -141,9 +141,10 @@ type string =
 
 let rec eqb1 s1 s2 =
   match s1 with
-  | EmptyString -> (match s2 with
-                    | EmptyString -> True
-                    | String (_, _) -> False)
+  | EmptyString ->
+    (match s2 with
+     | EmptyString -> True
+     | String (_, _) -> False)
   | String (c1, s1') ->
     (match s2 with
      | EmptyString -> False
@@ -292,15 +293,16 @@ let step_state_by_arc cur_s arc =
   | False ->
     (match if_on_next_taxiway cur_s arc with
      | True ->
-       Cons ((State ((Cons (arc, (s_1 cur_s))), (snd arc), (tl (s_3 cur_s)), (Cons
-         ((s_2 cur_s), (s_4 cur_s))))), Nil)
+       Cons ((State ((Cons (arc, (s_1 cur_s))), (snd arc), (tl (s_3 cur_s)),
+         (Cons ((s_2 cur_s), (s_4 cur_s))))), Nil)
      | False -> Nil)
 
 (** val step_states : state_type -> c_Graph_type -> state_type list **)
 
 let step_states cur_s d =
   match hd_error (s_1 cur_s) with
-  | Some arc -> flat_map (step_state_by_arc cur_s) (find_Arc (snd (fst arc)) d)
+  | Some arc ->
+    flat_map (step_state_by_arc cur_s) (find_Arc (snd (fst arc)) d)
   | None -> Nil
 
 (** val find_path_aux :
@@ -313,7 +315,8 @@ let rec find_path_aux end_v d bound cur_s =
     cat
       (match if_reach_endpoint cur_s end_v with
        | True -> Cons ((rev (s_1 cur_s)), Nil)
-       | False -> Nil) (flat_map (find_path_aux end_v d n) (step_states cur_s d))
+       | False -> Nil)
+      (flat_map (find_path_aux end_v d n) (step_states cur_s d))
 
 (** val input0 : vertex **)
 
@@ -321,21 +324,22 @@ let input0 =
   O
 
 (** val find_path :
-    vertex -> vertex -> string list -> c_Graph_type -> arc_type list list option **)
+    vertex -> vertex -> string list -> c_Graph_type -> arc_type list list
+    option **)
 
 let find_path start_v end_v aTC d =
   match aTC with
   | Nil -> None
   | Cons (t, rest) ->
     Some
-      (find_path_aux end_v d (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S
-        (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S
-        (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S
-        (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S
-        (S (S (S (S (S (S (S
+      (find_path_aux end_v d (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S
+        (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S
+        (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S
+        (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S
+        (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S
         O))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))
-        (State ((Cons ((Pair ((Pair ((Pair (start_v, input0)), (Pair (start_v,
-        input0)))), t)), Nil)), t, rest, Nil)))
+        (State ((Cons ((Pair ((Pair ((Pair (start_v, input0)), (Pair
+        (start_v, input0)))), t)), Nil)), t, rest, Nil)))
 
 (** val c_to_n : arc_type -> edge_type **)
 
@@ -348,8 +352,8 @@ let to_N le =
   map c_to_n le
 
 (** val path_finding_algorithm :
-    vertex -> vertex -> taxiway_type list -> n_Graph_type -> edge_type list list
-    option **)
+    vertex -> vertex -> taxiway_type list -> n_Graph_type -> edge_type list
+    list option **)
 
 let path_finding_algorithm start_v end_v aTC graph =
   match find_path start_v end_v aTC (to_C graph) with
