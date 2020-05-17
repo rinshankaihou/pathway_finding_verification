@@ -3,7 +3,8 @@
     In default, this file won't be compiled use "make"
 *)
 
-From Taxiway Require Export Find_path.
+From Taxiway Require Export Algorithm.
 
 Require Coq.extraction.Extraction.
-Extraction "find_path.ml" find_path.
+Extraction "extraction/path_finding_algorithm.ml" path_finding_algorithm.
+Extraction "extraction/path_finding_example.ml" path_finding_example.

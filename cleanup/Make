@@ -8,3 +8,4 @@ To_naive.v
 To_complete.v
 Downward.v
 Lifting.v
+Algorithm.v
