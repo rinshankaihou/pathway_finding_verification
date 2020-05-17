@@ -40,7 +40,7 @@ We have a nice makefile.
 
 Or you can type ```coqc -Q . Taxiway file.v``` to compile a single file.
 
-If you want to extract the algorithm into OCaml, execute ```Extraction.v``` interactively.
+If you want to extract the algorithm into OCaml, execute ```Extraction.v``` interactively. You can either extract the pure algorithm implementation code or a version with an example by executing corresponding code in ```Extraction.v``` interactively.
 
 
 # File Description
@@ -52,7 +52,8 @@ If you want to extract the algorithm into OCaml, execute ```Extraction.v``` inte
 6. ```Downward.v``` : The proof for the downward preservation of correctness of the downward map.
 7. ```Lifting.v``` : The proof for the partial identity of expansion map and downward map.
 8. ```Example.v``` : Some examples in Ann Arbor airport. It can give you an intuitive understanding on how our algorithm works.
-9. ```Extraction.v``` : Extract the code to OCaml.
+9. ```Algorithm.v``` : The top-level algorithm call. 
+10. ```Extraction.v``` : Extract the code to OCaml.
 
 
 
