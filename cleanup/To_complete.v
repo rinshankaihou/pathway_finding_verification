@@ -38,37 +38,5 @@ Definition to_C (ng : N_Graph_type) : C_Graph_type :=
         flat_map (generate_edges bg) bg.
 
 
-(* examples *)
-Example A: Vertex := index 1.
-Example B: Vertex := index 2.
-Example C: Vertex := index 3.
-Example D: Vertex := index 4.
-Example E: Vertex := index 5.
-
-
-Example AB: Edge_type := (A, B, "x").
-Example BA: Edge_type := (B, A, "x").
-(* ========== testcase ========== *)
-(*
-    A testcase for the to_C function on ann arbor case.
-*)
-Definition eqe (e1 :Arc_type) (e2:Arc_type) : bool :=
-    (eqv e1.1.1.1 e2.1.1.1) &&
-    (eqv e1.1.1.2 e2.1.1.2) &&
-    (eqv e1.1.2.1 e2.1.2.1) &&
-    (eqv e1.1.2.2 e2.1.2.2) &&
-    (e1.2 =? e2.2).
-
-Fixpoint in_list_b (e : Arc_type) (le : list Arc_type) : bool :=
-    match le with
-    | [] => false
-    | h::t => if eqe h e then true else in_list_b e t
-    end.
-
-Fixpoint two_list_inclusion (l1 : list Arc_type) (l2 : list Arc_type) : bool :=
-    match l1 with
-    | [] => true
-    | h::t => (in_list_b h l2) && two_list_inclusion t l2
-    end.
 
 

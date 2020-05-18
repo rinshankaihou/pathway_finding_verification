@@ -13,7 +13,6 @@ Require Import Arith.
 Require Import Coq.Program.Tactics.
 
 From Taxiway Require Import Types.
-(* From Taxiway Require Import Example. *)
 
 From Hammer Require Import Hammer.
 
@@ -77,6 +76,3 @@ Definition to_N (le : list Arc_type) : list Edge_type :=
     map c_to_n le.
 
 
-(* Eval compute in to_N [(((Ch, BC), (Ch, AA3)), B); (((Ch, BC), (Ch, AA3)), B)].
-Example xm : to_N [(((Ch, BC), (Ch, AA3)), B); (((Ch, BC), (Ch, AA3)), B)] = [((Ch, AA3), B)].
-Proof. compute. reflexivity. Qed. *)

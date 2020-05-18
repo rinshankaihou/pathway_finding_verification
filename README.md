@@ -14,6 +14,8 @@ Though the listed environment is not necessarily required for you to run Coq, we
 ## Dependency
 [math-comp](https://github.com/math-comp/math-comp) package.
 
+[Coq.IO](http://coq.io/getting_started.html) (only for extraction with printing example)
+
 [CoqHammer](https://github.com/lukaszcz/coqhammer) with all four ATPs. 
 
 | name | version |
@@ -35,12 +37,19 @@ Otherwise, if you encounter any failure related to ```hammer``` tactic, please r
 
 # Make and Extraction
 We have a nice makefile.
-   - ```make``` : compile all the codes except for ```Extraction.v```
-   - ```make clean``` : remove all temporary files and compiled files
+   - ```make``` : compile all the codes and extract
+   - ```make clean``` : remove all temporary files, compiled files and extracted files
 
 Or you can type ```coqc -Q . Taxiway file.v``` to compile a single file.
 
-If you want to extract the algorithm into OCaml, execute ```Extraction.v``` interactively. You can either extract the pure algorithm implementation code or a version with an example by executing corresponding code in ```Extraction.v``` interactively.
+The makefile automatically create the extracted files for you. You can type the command to print the result of an example.
+```
+./coq_print.native
+```
+
+You're free to change the example in ```Example.v```, but our example is limited to Ann Arbor airport, or you need to define a similar string map like we do.
+
+If you don't want to install the IO library, you can execute the alternative code in ```Extraction.v``` and run ```extracion/print_result.ml``` instead.
 
 
 # File Description
