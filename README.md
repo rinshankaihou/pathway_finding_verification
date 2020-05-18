@@ -47,7 +47,7 @@ The makefile automatically create the extracted files for you. You can type the 
 ./coq_print.native
 ```
 
-You're free to change the example in ```Example.v```, but our example is limited to Ann Arbor airport, or you need to define a similar string map like we do. If you just want the pure algorithm code, we extract and store it in ```extraction/path_finding_algorithm.ml" for you.
+You're free to change the example in ```Example.v```, but our example is limited to Ann Arbor airport, or you need to define a similar string map like we do. If you just want the pure algorithm code, we extract and store it in ```extraction/path_finding_algorithm.ml``` for you.
 
 If you don't want to install the IO library, you can execute the alternative code in ```Extraction.v``` and run ```extracion/print_result.ml``` instead.
 
