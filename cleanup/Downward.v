@@ -1,4 +1,7 @@
-(* This file have five theorems indicating the correctness theorems on complete graph preserve downward*)
+(* 
+    This file have five theorems indicating the correctness theorems on complete graph preserve downward
+    Top level theorem is "correctness_preservation"
+*)
 
 From mathcomp Require Import all_ssreflect.
 Require Import Coq.Strings.String Coq.Bool.Bool Coq.Lists.List.

@@ -47,9 +47,9 @@ The makefile automatically create the extracted files for you. You can type the 
 ./coq_print.native
 ```
 
-You're free to change the example in ```Example.v```, but our example is limited to Ann Arbor airport, or you need to define a similar string map like we do. If you just want the pure algorithm code, we extract and store it in ```extraction/path_finding_algorithm.ml``` for you.
+You're free to change the example in ```Example.v```, but our example is limited to Ann Arbor airport, or you need to define a similar string map like we do. 
 
-If you don't want to install the IO library, you can execute the alternative code in ```Extraction.v``` and run ```extracion/print_result.ml``` instead.
+If you don't want to install the IO library, you can execute the alternative code in ```Extraction.v``` and run ```extracion/print_result.ml``` instead. If you just want the pure algorithm code, we extract and store it in ```extraction/path_finding_algorithm.ml``` for you.
 
 
 # File Description
@@ -69,3 +69,10 @@ If you don't want to install the IO library, you can execute the alternative cod
 # Possible Issues and Solutions
 1. ```ATPs fail to find a proof.``` This is probably because the time limit for ATP is too short for your CPU performance to find a proof. Please add ```Set Hammer ATPLimit n.``` (n is the time limit, default is 10, we recommend 20) and ```Hammer_cleanup.``` command anywhere before the failed tactic. 
 2. ```Fail to reconstruct the proof.``` This is because the time limit for reconstruction is too short for the reconstruction to finish. Please add ```Set Hammer ReconstrLimit n.``` (n is the time, default is 10, typically 20 is enough) command before the failed tactic. 
+
+# Naming Convention
+In the code, we don't use the term *undirected* and *directed expanded* because they look similar and have strange abbreviation. Instead, we use
+   - ***naive*** for "undirected"
+   - ***complete*** for "directed (expanded)"
+
+Hereby, when you see *n* and *c* is the code, it is very likely to the indicate *undirected* and *directed*. For example, ```to_N``` means a map from a directed path to a undirected path.

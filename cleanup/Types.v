@@ -1,3 +1,13 @@
+(*
+    We define the type encodings of the algorithm in this file.
+    We use naming conventions of (vertex, edge) for undirected graph and (node, arc) for directed graph
+    In the algorithm, we don't use term undirected or directed because they might cause confusion. Instead, we use
+        - "naive" for undirected
+        - "complete" for directed 
+    The term complete is because the directed expanded map is what contains full information.
+*)
+
+
 From mathcomp Require Import all_ssreflect.
 (* 
     The order is important, mathcomp also implements List,
@@ -102,6 +112,7 @@ Proof. unfold transitive. intros. hammer. Qed.
 (* Theorem Vertexoid: Setoid_Theory _ eqv.
 split. exact eqv_refl. exact eqv_sym. exact eqv_trans. Qed. *)
 
+(* By this relation, we can use equal of vertex like "=" *)
 Add Parametric Relation : Vertex eqv
   reflexivity proved by eqv_refl
   symmetry proved by (eqv_sym )
@@ -207,6 +218,7 @@ Eval compute in  (eg_state@1, eg_state@2, eg_state@3, eg_state@4).
 
 (* 
     hardcoded input vertex. if a vertex is start_vertex in the naive graph, 
-    we encode input Node in the complete graph to be ((start_vertex, input), (start_vertex, input)) 
+    we encode input Node in the complete graph to be ((start_vertex, input), (start_vertex, input)), a self looping arc
+    input is a placeholder to form a valid structure
 *)
 Example input : Vertex := index 0.
