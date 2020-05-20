@@ -19,7 +19,7 @@ Definition Edge_inv (edge : Edge_type) : Edge_type :=
     ((edge.1.2, edge.1.1), edge.2).
 
 (* add the inverse of every edge, change the graph to bi-directional graph
-    subtract the reversed input edge *)
+    except the reversed input edge *)
 Definition undirect_to_bidirect (ng : N_Graph_type) : N_Graph_type := 
     filter (fun x => negb (eqv x.1.1 input)) (flat_map (fun edge => [edge; Edge_inv edge]) ng).
 

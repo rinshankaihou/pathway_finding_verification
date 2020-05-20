@@ -15,7 +15,7 @@ Open Scope string_scope.
 Open Scope list_scope.
 From Taxiway Require Import Types.
 From Taxiway Require Import Find_path To_complete To_naive.
-From Taxiway Require Import Algorithm.
+(* From Taxiway Require Import Algorithm. *)
 
 
 (* ============ vertex ============*)
@@ -46,6 +46,9 @@ Example ann_arbor : C_Graph_type :=[
     (((A3r, input), (AA3, A3r)), A3);
     (((A2r, input), (AB, A2r)), A2);
     (((A1r, input), (AA1, A1r)), A1);
+    ((BC, input), (Ch, BC), C);
+    ((BC, input), (AB, BC), B);
+    ((BC, input), (AC, BC), C);
     (((AA3, A3r), (AB, AA3)), A);
     (((AA3, AB), (A3r, AA3)), A3);
     (((AB, A2r), (AA3, AB)), A);
@@ -76,11 +79,13 @@ Example ann_arbor : C_Graph_type :=[
     (((BC, AC), (AB, BC)), B)
 ].
 
+(* input edges have taxiway name "" *)
 Example naive_ann_arbor : N_Graph_type :=[
     ((Ch, input), "");
     ((A1r, input), "");
     ((A2r, input), "");
-    ((A3r, input), "");    
+    ((A3r, input), "");
+    ((BC, input), "");   
     ((Ch, BC), C);
     ((BC, AB), B);
     ((AB, AA3), A);
