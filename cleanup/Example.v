@@ -13,9 +13,7 @@ Import ListNotations.
 From Coq.Arith Require Import Arith EqNat.
 Open Scope string_scope.
 Open Scope list_scope.
-From Taxiway Require Import Types.
-From Taxiway Require Import Find_path To_complete To_naive.
-From Taxiway Require Import Algorithm.
+From Taxiway Require Import Types Find_path To_complete To_naive Algorithm.
 
 
 (* ============ vertex ============*)

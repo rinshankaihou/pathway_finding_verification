@@ -1,6 +1,7 @@
 (*
-    This file proves the partial identity between expansion map and downward map
-    i.e. to_naive (to_complete G) is the subset of G
+    Properties of to_N and to_C.    
+    Ideally we wnat (to_N (to_C G)) = G, but that is not the case; 
+    the actual theorems are slightly different (G_subset_toN_toC_G and toN_toC_G_subset_G).
 *)
 From mathcomp Require Import all_ssreflect.
 Require Import Coq.Strings.String Coq.Bool.Bool Coq.Lists.List.

@@ -8,9 +8,7 @@ Import ListNotations.
 From Coq.Arith Require Import Arith EqNat.
 Open Scope string_scope.
 Open Scope list_scope.
-Require Import Coq.Program.Equality.
-Require Import Arith.
-Require Import Coq.Program.Tactics.
+Require Import Coq.Program.Equality Arith Coq.Program.Tactics.
 
 From Taxiway Require Import Types.
 

@@ -1,8 +1,7 @@
 (*
-    In this project, we proved the correctness of our implementation.
+    We prove correctness of the  find_path function (complete_graph --findpath-> complete_path).
 
-    Theorem is the five properties, 
-    Lemma are lemmas used to prove theorem
+    Important results start with "Theorem", including the 5 correctness properties.
 
     We first prove the result is connected and follows ATC, 
         because we can use the lemmas step_states_properties to easily prove other properties
@@ -30,19 +29,7 @@ Require Import Coq.Program.Equality.
 Require Import Arith.
 Require Import Coq.Program.Tactics.
 
-(* configure Hintdb *)
-Hint Resolve beq_nat_refl.
-
-(* 
-    Setoid is included in the List actually
-    setoid_rewrite can rewrite subterms inside a function
-*)
-Require Setoid.
-(* ========== Tactics ==========*)
-
-(* Here we declare some tactics to replace duplicated work *)
-
-(* hypothesis with the form In elem (flat_map ..) *)
+(* for hypothesis with the form In elem (flat_map ..) *)
 Ltac split_in_flat_map H1 elem output_H1 output_H2 :=
     apply in_flat_map in H1; destruct H1 as [elem output_H1]; destruct output_H1 as [output_H1 output_H2].
 
@@ -64,21 +51,6 @@ Ltac unpack_if_reach_endpoint H_reach_end H_path_not_empty H_reach_end_1 H_reach
     note: Hl is first part (before ++) of find_path_aux 
 *)
 Ltac unpack_find_path_aux_in_H H Hl Hr := unfold find_path_aux in H; apply in_app_or in H; destruct H as [Hl | Hr].
-
-(*
-    for H that contains if_reach_endpoint s end_v = true,
-    unpack into two goals that 
-        hd.1.2.1 = end_v
-        s @3 = []
-
-    Not used in the proof
-*)
-(* Ltac unpack_if_reach_endpoint_in_goal H_path_not_empty:= 
-   unfold if_reach_endpoint; simpl; 
-   rewrite -> H_path_not_empty;
-   apply andb_true_iff; split; 
-   [apply Nat.eqb_eq; apply eqv_eq | apply length_zero_iff_nil]. *)
-
 
 (*
     Apply lemma (find_path_aux_prop) to goal (output_path_prop).
@@ -409,22 +381,6 @@ Proof.
         simpl. rewrite -> Hab. simpl in IH. simpl. rewrite <- IH.
         apply path_coresp_atc_lemma2. rewrite -> String.eqb_sym.  assumption.
 Qed.
-
-(* 
-    function ensures no consecutive duplicationl
-
-    NOTE: it ensures the case in reality, 
-        however we don't need it in prove, hence our theorem is stronger
-*)
-(* Fixpoint no_conn_dup (lst : list string) : Prop :=
-    match lst with
-    | [] => True
-    | f::l => match l with
-        | [] => True
-        | s::r => (f <> s) /\ no_conn_dup l
-        end
-    end. *)
-
 
 (* the function checks whether extracted ATC is same as input atc*)
 Definition path_follow_atc (path : list Arc_type) (atc : list string) : Prop :=

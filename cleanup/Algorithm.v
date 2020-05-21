@@ -1,18 +1,13 @@
 (*
-    This file is the top-level algorithm execution, a combination of To_complete, Find_path, To_naive
-    We 
+    The top-level algorithm with correctness proof. a combination of To_complete, Find_path, To_naive. 
 *)
 
-From Taxiway Require Import Types.
-From Taxiway Require Import To_complete.
-From Taxiway Require Import Find_path.
-From Taxiway Require Import To_naive.
-From Taxiway Require Import Downward Correctness Lifting.
+From Taxiway Require Import Types To_complete Find_path To_naive Downward Correctness Lifting.
 From Hammer Require Import Hammer.
 Require Import Coq.Strings.String Coq.Bool.Bool Coq.Lists.List.
 Import ListNotations.
 
-
+(* top level theorem *)
 Definition path_finding_algorithm (start_v : Vertex) (end_v : Vertex) (ATC : list Taxiway_type) (graph : N_Graph_type) : option (list (list Edge_type)) := 
     match find_path start_v end_v ATC (to_C graph) with 
     | None => None
@@ -20,6 +15,7 @@ Definition path_finding_algorithm (start_v : Vertex) (end_v : Vertex) (ATC : lis
     end.
     
 
+(* top level correctness theorem. it states that every path in the output has these properties. *)
 Theorem total_correctness:
     forall (start_v : Vertex) (end_v :Vertex) (ATC : list Taxiway_type) (G:N_Graph_type) (paths : list (list Edge_type)) (path : list (Edge_type)),
     Some paths = (path_finding_algorithm (start_v : Vertex) (end_v : Vertex) (ATC : list string) G) ->
