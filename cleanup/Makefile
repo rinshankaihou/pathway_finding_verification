@@ -1,5 +1,6 @@
 all: Makefile.coq
 	+make -f Makefile.coq all
+	# uncomment this to enable extraction
 	#ocamlbuild extraction/coq_print.native -use-ocamlfind -package io-system
 
 clean: Makefile.coq

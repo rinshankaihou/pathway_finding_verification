@@ -287,7 +287,7 @@ assert (
     intros. 
     induction path0.
     - easy.
-    - simpl. 
+    - simpl.
     hammer.
 }
 hammer. 

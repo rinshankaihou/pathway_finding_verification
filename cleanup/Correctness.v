@@ -38,7 +38,6 @@ Hint Resolve beq_nat_refl.
     setoid_rewrite can rewrite subterms inside a function
 *)
 Require Setoid.
-
 (* ========== Tactics ==========*)
 
 (* Here we declare some tactics to replace duplicated work *)
