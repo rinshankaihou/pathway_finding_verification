@@ -171,18 +171,13 @@ apply filter_In in H. destruct H. assumption. Qed.
     3. there exists a previous edge of ne in the bidirected graph.
       Because our undirect graph uses an ordered pair [A,B] (a directed edge) to represent {[A,B],[B,A]},
       this is equivalent to say that there is an edge e in the undirect graph, s.t. e or reverse_e is ne's previous edge, under condition 2
-    4. [ne; prev_ne] are the first two items in (undirect_to_bidirect G). 
-      TODO this might not be true, and what we need is just [ne; prev_ne] \subset (undirect_to_bidirect G), which is automatically given.
 *)
 Theorem G_subset_toN_toC_G : forall (ne: Edge_type) (G: N_Graph_type),
     no_self_loop G -> (* no self loop *)
     In ne G ->
     (exists prev_ne, 
         (* ne has a previous edge in the bidirect graph *)
-        (In prev_ne (previous_edges ne (undirect_to_bidirect G)) /\ 
-        (* exists some previous edge is equivalent to we can find it in the graph G
-        WLOG let [ne, prev_ne] be the first two items in bi_G *) 
-        exists L, [ne; prev_ne] ++ L = undirect_to_bidirect G)
+        (In prev_ne (previous_edges ne (undirect_to_bidirect G)))
     ) ->
     (ne.1.2 >v< input /\ ne.1.1 >v< input) -> (* ne is not an input edge *)
     In ne (to_N (to_C G)).
@@ -193,7 +188,6 @@ unfold to_C.
 remember (undirect_to_bidirect G) as bg.
 unfold generate_edges.
 destruct Hexist_prev as [prev_ne Hprev_ne].
-destruct Hprev_ne as [Hprev_ne Hprev_ne0].
 
 remember (to_N (to_C [ne; prev_ne] )) as G''.
 destruct ne as [neEndStart neTaxi] eqn:Hne1.
@@ -213,24 +207,12 @@ assert(Hne5_2: (neStart =v= neEnd) = false). {
     apply negb_eqv_false_equiv. assumption.
 }
 (* properties about ne and prev_ne *)
-(* assert (Hne6: (ne.1.1 >v< input) /\ (ne.1.2 >v< input)) by hammer.
-rewrite -> Hne1 in Hne6; simpl in Hne6.
-destruct Hne6 as [Hne6 Hne7]. *)
 
 assert(Hprev_ne_in_bg: In prev_ne bg). {
     rewrite -> Heqbg.
     apply prev_edge_in_bi_G with (ne:= ne). hammer.
     hammer.
 }
-(* assert (Hprev_ne1: (prev_ne.1.1 >v< input) /\ (prev_ne.1.2 >v< input)). {
-    assert (Hprev_ne1_equiv: no_input_vertex (undirect_to_bidirect G)). {
-        apply no_input_vertex_in_bg. unfold no_input_vertex. easy.
-    }
-    rewrite <- Heqbg in Hprev_ne1_equiv. 
-    unfold no_input_vertex in Hprev_ne1_equiv. apply Hprev_ne1_equiv.
-    assumption.
-}
-destruct Hprev_ne1 as [Hprev_ne1 Hprev_ne2]. *)
 
 assert (Hprev_ne1: (prev_ne.1.1 >v< input) ) by hammer.
 assert (Hprev_ne3: prev_ne.1.1 =v= ne.1.2 /\ prev_ne.1.2 >v< ne.1.1). {
@@ -346,8 +328,9 @@ destruct (prev_ne.1.2 >v< input) eqn:Hprev_ne_not_input.
 
 
     assert(lemma2: In ne (to_N (to_C G))). {
-        destruct Hprev_ne0 as [L Hprev_ne0].
-        unfold to_C. rewrite <- Heqbg. rewrite <- Hprev_ne0.
+        (* destruct Hprev_ne0 as [L Hprev_ne0].
+        rewrite <- Hprev_ne0. *)
+        unfold to_C. rewrite <- Heqbg. 
         simpl.
         (* evaluate the first generate_edges *)
         Ltac temp Hne1 Hne3 Hne4 Hne5 Hne5_2 Hne6 Hne7 Hne8 Hne9 
@@ -387,59 +370,70 @@ destruct (prev_ne.1.2 >v< input) eqn:Hprev_ne_not_input.
         temp Hne1 Hne3 Hne4 Hne5 Hne5_2 Hne6 Hne7 Hne8 Hne9 
             Hprev_ne1 Hprev_ne2 Hprev_ne3 Hprev_ne4 Hprev_ne5 Hprev_ne6 Hprev_ne7 Hprev_ne
             hyp1 hyp2 hyp3 hyp4 hyp5 hyp6 hyp7 hyp8 hyp9.
-        left. easy.
+        unfold to_N. apply in_map_iff.
+        exists (prev_ne.1, (neEnd, neStart), neTaxi).
+        split. 
+        - easy.
+        - apply in_flat_map. exists ne. split.
+            + rewrite Heqbg. apply undirect_edge_in_bi_G.
+                * hammer. * hammer.
+            + apply in_map_iff. exists prev_ne. split. hammer. hammer.
     }
     hammer.
-
+(* the proof for this case is kind of redundant with the previous one *)
 - repeat (
-    try rewrite -> Hne3 in HeqG'';
-    try rewrite -> Hne4 in HeqG'';
-    try rewrite -> Hne5 in HeqG'';
-    try rewrite -> Hne5_2 in HeqG'';
-    try rewrite -> Hne8 in HeqG'';
-    try rewrite -> Hne9 in HeqG'';
-    try rewrite -> H_ne_not_input1 in HeqG'';
-    try rewrite -> H_ne_not_input2 in HeqG'';
-    try rewrite -> Hprev_ne_in_bg in HeqG'';
-    try rewrite -> Hprev_ne1 in HeqG'';
-    try rewrite -> Hprev_ne3 in HeqG'';
-    try rewrite -> Hprev_ne4 in HeqG'';
-    try rewrite -> Hprev_ne5 in HeqG'';
-    try rewrite -> Hprev_ne6 in HeqG'';
+        try rewrite -> Hne3 in HeqG'';
+        try rewrite -> Hne4 in HeqG'';
+        try rewrite -> Hne5 in HeqG'';
+        try rewrite -> Hne5_2 in HeqG'';
+        try rewrite -> Hne8 in HeqG'';
+        try rewrite -> Hne9 in HeqG'';
+        try rewrite -> H_ne_not_input1 in HeqG'';
+        try rewrite -> H_ne_not_input2 in HeqG'';
+        try rewrite -> Hprev_ne_in_bg in HeqG'';
+        try rewrite -> Hprev_ne1 in HeqG'';
+        try rewrite -> Hprev_ne3 in HeqG'';
+        try rewrite -> Hprev_ne4 in HeqG'';
+        try rewrite -> Hprev_ne5 in HeqG'';
+        try rewrite -> Hprev_ne6 in HeqG'';
 
-    try rewrite -> Hprev_ne7 in HeqG'';
-    try rewrite -> Hne1 in HeqG'';
-    try unfold Edge_inv in HeqG'';
-    try simpl in HeqG'';
-    try unfold c_to_n in HeqG''
-).
-choose_branch_2 ((neEnd =v= prev_ne.1.2) = false) hyp1 HeqG''.
-choose_branch_2 ((neStart =v= prev_ne.1.2) = false) hyp2 HeqG''.
-assert(lemma2: In ne (to_N (to_C G))). {
-    destruct Hprev_ne0 as [L Hprev_ne0].
-    unfold to_C. rewrite <- Heqbg. rewrite <- Hprev_ne0.
-     simpl.
+        try rewrite -> Hprev_ne7 in HeqG'';
+        try rewrite -> Hne1 in HeqG'';
+        try unfold Edge_inv in HeqG'';
+        try simpl in HeqG'';
+        try unfold c_to_n in HeqG''
+    ).
+    choose_branch_2 ((neEnd =v= prev_ne.1.2) = false) hyp1 HeqG''.
+    choose_branch_2 ((neStart =v= prev_ne.1.2) = false) hyp2 HeqG''.
+    assert(lemma2: In ne (to_N (to_C G))). {
+    unfold to_C. rewrite <- Heqbg.
+    simpl.
         unfold c_to_n; simpl.
     temp Hne1 Hne3 Hne4 Hne5 Hne5_2 Hne6 Hne7 Hne8 Hne9 
         Hprev_ne1 Hprev_ne2 Hprev_ne3 Hprev_ne4 Hprev_ne5 Hprev_ne6 Hprev_ne7 Hprev_ne
         hyp1 hyp2 hyp3 hyp4 hyp5 hyp6 hyp7 hyp8 hyp9.
-    left. easy.
-}
-hammer.
+        unfold to_N. apply in_map_iff.
+        exists (prev_ne.1, (neEnd, neStart), neTaxi).
+        split. 
+        - easy.
+        - apply in_flat_map. exists ne. split.
+            + rewrite Heqbg. apply undirect_edge_in_bi_G.
+                * hammer. * hammer.
+            + apply in_map_iff. exists prev_ne. split. hammer. hammer.
+    }
+    hammer.
 Qed.
 
-Theorem toC_toN_id2 : forall (ne: Edge_type) (G: N_Graph_type),
-    In ne (to_N (to_C G)) ->
-    In ne (undirect_to_bidirect G).
-Proof. intros.
+
+(*  (to_N (to_C G)) \subset  (undirect_to_bidirect G) *)
+Theorem toN_toC_G_subset_G : forall (G: N_Graph_type),
+    incl (to_N (to_C G)) (undirect_to_bidirect G).
+Proof. intros. unfold incl. intro ne. intros.
 unfold to_N, to_C in H.
 remember (undirect_to_bidirect G) as bg.
 apply in_map_iff in H. destruct H as [A H]. destruct H.
 apply in_flat_map in H0. destruct H0 as [e H1]. destruct H1 as [H1 H2].
 unfold generate_edges in H2. apply in_map_iff in H2. destruct H2 as [V H2]. destruct H2 as [H2 H3].
-unfold previous_edges in H3. apply filter_In in H3. destruct H3 as [H3 H4]. 
-apply andb_true_iff in H4. destruct H4 as [H4 H5].
-unfold c_to_n in H. rewrite <- H2 in H; simpl in H.
 assert (e = ne) by hammer.
 rewrite <- H0. assumption. 
 Qed.

@@ -15,7 +15,7 @@ Open Scope string_scope.
 Open Scope list_scope.
 From Taxiway Require Import Types.
 From Taxiway Require Import Find_path To_complete To_naive.
-(* From Taxiway Require Import Algorithm. *)
+From Taxiway Require Import Algorithm.
 
 
 (* ============ vertex ============*)

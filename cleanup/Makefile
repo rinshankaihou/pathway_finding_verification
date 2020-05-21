@@ -1,6 +1,6 @@
 all: Makefile.coq
 	+make -f Makefile.coq all
-	ocamlbuild extraction/coq_print.native -use-ocamlfind -package io-system
+	#ocamlbuild extraction/coq_print.native -use-ocamlfind -package io-system
 
 clean: Makefile.coq
 	+make -f Makefile.coq clean
