@@ -1,0 +1,7 @@
+*.vo
+*.glob
+*.aux
+node_modules
+_build
+Makefile.coq*
+.coqdeps.d

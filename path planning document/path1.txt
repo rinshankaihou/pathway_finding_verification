@@ -1,5 +1,0 @@
-C1 input
-CB from C1
-CA from CB
-BA from CA
-A2 from BA

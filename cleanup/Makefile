@@ -1,7 +1,9 @@
 all: Makefile.coq
 	+make -f Makefile.coq all
-	# uncomment this to enable extraction
-	#ocamlbuild extraction/coq_print.native -use-ocamlfind -package io-system
+	
+# extract code to OCaml. Uncomment Extraction.v in Make first.	
+extract: 
+	ocamlbuild extraction/coq_print.native -use-ocamlfind -package io-system
 
 clean: Makefile.coq
 	+make -f Makefile.coq clean
