@@ -61,7 +61,9 @@ You're free to change the example in ```Example.v```, but our example is limited
 
 If you don't want to install the IO library, you can execute the alternative code in ```Extraction.v``` and run ```extracion/print_result.ml``` instead. If you just want the pure algorithm code, we extract and store it in ```extraction/path_finding_algorithm.ml``` for you.
 
-## src File Description
+## File Description
+
+The meat is all in src/.
 
 1. ```Types.v``` : The type definition include graph encoding and intermediate state.
 2. ```To_complete.v``` : The expansion algorithm from undirected (naive) graph to directed expanded (complete) graph.
