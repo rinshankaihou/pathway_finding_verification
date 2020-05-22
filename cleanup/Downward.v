@@ -101,7 +101,8 @@ Proof.
     intros. unfold to_N. hammer.
 Qed. 
 
-
+(* here we only prove (tl path) is in graph; 
+   naive_path_starts_with_vertex states that (hd path) is the start vertex, so it must also be in the graph. *)
 Definition naive_path_in_graph (path : list Edge_type) (G : list Edge_type) : Prop :=
     forall a, In a (tl (path)) -> In a G.
 
