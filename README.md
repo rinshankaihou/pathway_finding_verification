@@ -21,7 +21,7 @@ Though the listed environment is not necessarily required for you to run Coq, we
 
 [math-comp](https://github.com/math-comp/math-comp) package.
 
-[Coq.IO](http://coq.io/getting_started.html) (only for extraction to Ocaml and IO in Coq. See extraction.v)
+[Coq.IO](http://coq.io/getting_started.html) (for extraction to Ocaml and IO in Coq. See extraction.v)
 
 [CoqHammer](https://github.com/lukaszcz/coqhammer) with all four ATPs.
 
@@ -47,11 +47,12 @@ Otherwise, if you encounter any failure related to ```hammer``` tactic, please r
 We have a nice makefile.
 
 - ```make``` : compile all the codes and extract. If ```hammer``` fails, try ```make``` again without cleaning the cache for ```hammer```.
+- ```make extract```: compile the extracted example. 
 - ```make clean``` : remove all temporary files, compiled files and extracted files
 
 Or you can type ```coqc -Q . Taxiway file.v``` to compile a single file.
 
-The makefile automatically create the extracted files for you. You can type the command to print the result of an example.
+The makefile automatically create the extracted files for you. You can type the command to print the result of an example after you run ```make extract```.
 
 ```
 ./coq_print.native

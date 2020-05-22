@@ -10,5 +10,5 @@ Lifting.v
 Algorithm.v
 Example.v
 
-#uncomment this to enable extraction
-#Extraction.v
+#comment this to disable extraction
+Extraction.v
