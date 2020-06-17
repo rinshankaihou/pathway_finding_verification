@@ -17,6 +17,7 @@ clean: Makefile.coq
 	rm -f extraction/path_finding_algorithm.ml
 	rm -f extraction/path_finding_algorithm.mli
 	rm -f coq_print.native
+	#rm -f .lia.cache
 
 Makefile.coq: Make
 	$(COQBIN)coq_makefile -f Make -o Makefile.coq

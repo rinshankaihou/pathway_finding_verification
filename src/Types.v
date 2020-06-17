@@ -78,12 +78,11 @@ Proof. intros. split.
     - hammer.
 Qed. *)
 
-
 Lemma eqv_inv:
     forall v1 v2, (v1 >v< v2) <-> (v1 <> v2).
 Proof. intros. split.
     - intros. hammer.
-    - intros. hammer. 
+    - intros. assert ((v1 = v2 -> v1 =v= v2) -> (v1 <> v2 -> v1 >v< v2)). intros. hammer. auto.  
 Qed.
 
 

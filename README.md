@@ -2,6 +2,8 @@
 
 A taxiway finding algorithm with correctness proof, implemented in Coq. 
 
+The code is for paper "*Veriﬁcation of an Airport Taxiway Path-Finding Algorithm*", DASC 2020, submitted and waiting for decision now.
+
 ## Setup
 
 ### Environment
@@ -79,9 +81,12 @@ The meat is all in src/.
 
 ## Possible Issues and Solutions
 
-0. General quick fix: type make again without cleaning anything.
+0. General quick fix: type make again without cleaning anything. 
+    -   No joking, a particular case is line 291 in ```Downward.v```.
+    -   Almost all problem is due to the performance, and maybe you should cool down your CPU. The proofs are written in Ann Arbor where heat is not welcomed.
 1. ```ATPs fail to find a proof.``` This is probably because the time limit for ATP is too short for your CPU to find a proof. Please add ```Set Hammer ATPLimit n.``` (n is the time limit, default is 10, we recommend 20) and ```Hammer_cleanup.``` command anywhere before the failed tactic.
 2. ```Fail to reconstruct the proof.``` This is because the time limit for reconstruction is too short for the reconstruction to finish. Please add ```Set Hammer ReconstrLimit n.``` (n is the time, default is 10, typically 20 is enough) command before the failed tactic.
+    - We observe that in ```WSL2``` (with high version of hammer), there're some ```hammer``` will suffer this problem. Even the ATP time is very fast, the reconstruction may always fail (even after 30s). We fix some of the cases, but we don't promise everywhere. 
 3. Running out of memory. We recommend you [download more ram](https://downloadmoreram.com/).
 
 ## Naming Convention

@@ -288,8 +288,8 @@ assert (
     intros. 
     induction path0.
     - easy.
-    - simpl.
-    hammer.
+    - unfold to_N. clear H H0 H_original. hammer.
+    (* simpl. hammer. *)
 }
 hammer. 
 Qed.
