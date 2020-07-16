@@ -60,13 +60,13 @@ The makefile automatically create the extracted files for you. You can type the 
 ./coq_print.native
 ```
 
-You're free to change the example in ```Example.v```, but our example is limited to Ann Arbor airport, or you need to define a similar string map like we do.
+The ```Example.v``` is used initially to introduce what we're doing for each step and provide an intuitive understanding of the correctness of our theorems. If you want to play with the path finding algorithm, we provide ```Example_Wil.v``` (a small graph) and ```Example_Dtw.v``` (a large airport) for you. You're free to apply the algorithm to any other airports, but make sure you have made all necessary encoding similar to the three examples.
 
 If you don't want to install the IO library, you can execute the alternative code in ```Extraction.v``` and run ```extracion/print_result.ml``` instead. If you just want the pure algorithm code, we extract and store it in ```extraction/path_finding_algorithm.ml``` for you.
 
 ## File Description
 
-The meat is all in src/.
+The meat is all in ```src/```.
 
 1. ```Types.v``` : The type definition include graph encoding and intermediate state.
 2. ```To_complete.v``` : The expansion algorithm from undirected (naive) graph to directed expanded (complete) graph.
@@ -78,6 +78,7 @@ The meat is all in src/.
 8. ```Example.v``` : Some examples of the algorithm running on the Ann Arbor airport.
 9. ```Algorithm.v``` : The top-level algorithm, along with the top level theorem stating the correctness of that algorithm.
 10. ```Extraction.v``` : Extracting the code to OCaml.
+11. ```Example_Wil.v, Example_Dtw.v```: Two extra examples on Willow Run and DTW airport. We provide two path finding examples for each, and you're free to play by yourself.
 
 ## Possible Issues and Solutions
 

@@ -10,5 +10,9 @@ Lifting.v
 Algorithm.v
 Example.v
 
+#two extra examples
+Example_Dtw.v
+Example_Wil.v
+
 #comment this to disable extraction
 Extraction.v
