@@ -29,11 +29,12 @@ Though the listed environment is not necessarily required for you to run Coq, we
 
 | name | version |
 | ---- | ---- |
-| CoqHammer | 1.1.1 for Coq 8.10 |
+| CoqHammer | 1.1.1 for Coq 8.10 (recommend not use 1.3+)|
 | Vampire | 4.2.2 |
 | E | 2.4 |
 | z3_tptp | 4.8.7.0 |
 | cvc4 | 1.7 |
+
 
 Since the CoqHammer is a machine-learning-based proof automation tool, we recognized that many factors can affect whether the proof or reconstruction is successful. This is the reason why we strongly suggest you to use the exactly the same environment setup as ours.
 

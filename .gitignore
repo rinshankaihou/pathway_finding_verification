@@ -6,3 +6,4 @@ _build
 Makefile.coq*
 .coqdeps.d
 src/.lia.cache
+src/.vscode/settings.json
