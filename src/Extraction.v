@@ -55,9 +55,8 @@ Definition main := Extraction.launch print_example.
 Extraction "extraction/coq_print" main. 
 
 
-(* If you don't have IO library, use this *)
-(*
-From Taxiway Require Import Example.
-Extraction "extraction/path_finding_example.ml" path_finding_example_string.
+(* If you don't have IO library, it's an alternative choice*)
 
-*)
+(* From Taxiway Require Import Example.
+Extraction "extraction/path_finding_example.ml" path_finding_example_string. *)
+

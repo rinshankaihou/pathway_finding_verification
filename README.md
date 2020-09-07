@@ -63,7 +63,9 @@ The makefile automatically create the extracted files for you. You can type the 
 
 
 
-If you don't want to install the IO library, you can execute the alternative code in ```Extraction.v``` and run ```extracion/print_result.ml``` instead. If you just want the pure algorithm code, we extract and store it in ```extraction/path_finding_algorithm.ml``` for you.
+If you don't want to install the IO library, you can execute the alternative code in ```Extraction.v``` and run ```extracion/print_result.ml``` instead. (Update: Coq library has updated the string extraction pattern, so ```extraction/print_result.ml``` is temporarily broke now.)
+
+If you just want the pure algorithm code, we extract and store it in ```extraction/path_finding_algorithm.ml``` for you.
 
 ## File Description
 

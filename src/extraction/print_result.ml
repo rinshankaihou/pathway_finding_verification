@@ -1,7 +1,7 @@
 (*
   A print-help function for the example.
   We only support Ann Arbor case in Example.v
-  First run extraction.v in Extraction.v to extract path_finding_example.ml, then run this file directly
+  First run extraction in Extraction.v to extract path_finding_example.ml, then run this file directly
 *)
 
 
